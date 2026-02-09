@@ -13,6 +13,12 @@ export default function Home() {
           </p>
         </header>
         <SponsorshipForm />
+        <div className="text-center mt-8 text-sm text-foreground/60 max-w-2xl mx-auto">
+          <p className="font-semibold">A note on signage:</p>
+          <p className="mt-1">
+            With our packages, sponsors pay for their own sign. We are happy to arrange for signs to be made on your behalf. The standard size is 1220mm x 500mm.
+          </p>
+        </div>
       </div>
     </main>
   );
