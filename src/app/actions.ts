@@ -12,6 +12,17 @@ const sponsorshipTiers = [
   { id: "bronze", name: "Bronze", price: 300 },
 ];
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+  "image/vnd.adobe.photoshop",
+  "image/tiff",
+];
+
 const sponsorshipSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
@@ -19,11 +30,30 @@ const sponsorshipSchema = z.object({
   tierId: z.string().min(1, "Please select a sponsorship tier."),
   socialsImage: z
     .any()
-    .refine((file) => file.size > 0, "Socials image is required."),
+    .refine((file) => file instanceof File, "Socials image must be a file.")
+    .refine((file) => file.size > 0, "Socials image is required.")
+    .refine(
+      (file) => file.size <= MAX_FILE_SIZE,
+      `Max file size is 10MB.`
+    )
+    .refine(
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
+      "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted."
+    ),
   printImage: z
     .any()
-    .refine((file) => file.size > 0, "Print image is required."),
+    .refine((file) => file instanceof File, "Print-ready image must be a file.")
+    .refine((file) => file.size > 0, "Print-ready image is required.")
+    .refine(
+      (file) => file.size <= MAX_FILE_SIZE,
+      `Max file size is 10MB.`
+    )
+    .refine(
+      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
+      "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted."
+    ),
 });
+
 
 export async function processSponsorship(formData: FormData) {
   try {
