@@ -28,70 +28,36 @@ const sponsorshipSchema = z.object({
   email: z.string().email("Invalid email address."),
   contactNumber: z.string().min(1, "Please enter a contact number."),
   tierId: z.string().min(1, "Please select a sponsorship tier."),
-  socialsImage: z
-    .any()
-    .superRefine((file, ctx) => {
-      if (!(file instanceof File)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Socials image must be a file.",
-        });
-        return;
-      }
-      if (file.size === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Socials image is required.",
-        });
-        return;
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Max file size is 10MB.`,
-        });
-        return;
-      }
-      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted.",
-        });
-        return;
-      }
-    }),
-  printImage: z
-    .any()
-    .superRefine((file, ctx) => {
-      if (!(file instanceof File)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Print-ready image must be a file.",
-        });
-        return;
-      }
-      if (file.size === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Print-ready image is required.",
-        });
-        return;
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Max file size is 10MB.`,
-        });
-        return;
-      }
-      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted.",
-        });
-        return;
-      }
-    }),
+  socialsImage: z.any().superRefine((val, ctx) => {
+    const file = val as File | null;
+    if (!file || !(file instanceof File) || file.size === 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Socials image is required." });
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Max file size is 10MB.` });
+      return;
+    }
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted." });
+      return;
+    }
+  }),
+  printImage: z.any().superRefine((val, ctx) => {
+    const file = val as File | null;
+    if (!file || !(file instanceof File) || file.size === 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Print-ready image is required." });
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Max file size is 10MB.` });
+      return;
+    }
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted." });
+      return;
+    }
+  }),
 });
 
 
