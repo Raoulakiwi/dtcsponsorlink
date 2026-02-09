@@ -6,6 +6,7 @@ import { sponsorshipTiers } from "@/lib/data";
 const sponsorshipSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),
+  contactNumber: z.string().min(1, "Please enter a contact number."),
   tierId: z.string().min(1, "Please select a sponsorship tier."),
   socialsImage: z
     .any()
@@ -20,6 +21,7 @@ export async function processSponsorship(formData: FormData) {
     const data = {
       name: formData.get("name"),
       email: formData.get("email"),
+      contactNumber: formData.get("contactNumber"),
       tierId: formData.get("tierId"),
       socialsImage: formData.get("socialsImage"),
       printImage: formData.get("printImage"),
@@ -35,7 +37,7 @@ export async function processSponsorship(formData: FormData) {
       };
     }
 
-    const { name, email, tierId, socialsImage, printImage } = parsed.data;
+    const { name, email, contactNumber, tierId, socialsImage, printImage } = parsed.data;
 
     const selectedTier = sponsorshipTiers.find((t) => t.id === tierId);
     if (!selectedTier) {
@@ -65,6 +67,7 @@ export async function processSponsorship(formData: FormData) {
       sponsor: {
         name,
         email,
+        contactNumber,
       },
       tier: selectedTier.name,
       price: selectedTier.price,

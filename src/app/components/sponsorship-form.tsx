@@ -43,6 +43,7 @@ const formSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
+  contactNumber: z.string().min(1, "Please enter a contact number."),
   tierId: z.string({
     required_error: "You need to select a sponsorship tier.",
   }),
@@ -79,6 +80,7 @@ export default function SponsorshipForm() {
     defaultValues: {
       name: "",
       email: "",
+      contactNumber: "",
     },
   });
 
@@ -87,6 +89,7 @@ export default function SponsorshipForm() {
     const formData = new FormData();
     formData.append("name", values.name);
     formData.append("email", values.email);
+    formData.append("contactNumber", values.contactNumber);
     formData.append("tierId", values.tierId);
     formData.append("socialsImage", values.socialsImage[0]);
     formData.append("printImage", values.printImage[0]);
@@ -144,6 +147,19 @@ export default function SponsorshipForm() {
                   <FormLabel>Email Address</FormLabel>
                   <FormControl>
                     <Input placeholder="you@company.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="contactNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. 0412 345 678" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
