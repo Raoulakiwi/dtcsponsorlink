@@ -42,6 +42,9 @@ const formSchema = z
     name: z.string().min(2, {
       message: "Name must be at least 2 characters.",
     }),
+    contactName: z.string().min(2, {
+      message: "Contact name must be at least 2 characters.",
+    }),
     email: z.string().email({
       message: "Please enter a valid email address.",
     }),
@@ -112,6 +115,7 @@ export default function SponsorshipForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      contactName: "",
       email: "",
       contactNumber: "",
       emailSeparately: false,
@@ -122,6 +126,7 @@ export default function SponsorshipForm() {
     setIsSubmitting(true);
     const formData = new FormData();
     formData.append("name", values.name);
+    formData.append("contactName", values.contactName);
     formData.append("email", values.email);
     formData.append("contactNumber", values.contactNumber);
     formData.append("tierId", values.tierId);
@@ -178,6 +183,19 @@ export default function SponsorshipForm() {
                       placeholder="e.g. John Smith or Smith Co."
                       {...field}
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="contactName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Jane Doe" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

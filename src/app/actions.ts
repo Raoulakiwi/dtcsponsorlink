@@ -26,6 +26,9 @@ const ACCEPTED_IMAGE_TYPES = [
 const sponsorshipSchema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters."),
+    contactName: z
+      .string()
+      .min(2, "Contact name must be at least 2 characters."),
     email: z.string().email("Invalid email address."),
     contactNumber: z.string().min(1, "Please enter a contact number."),
     tierId: z.string().min(1, "Please select a sponsorship tier."),
@@ -83,11 +86,11 @@ const sponsorshipSchema = z
     validateFile(printImage, "printImage");
   });
 
-
 export async function processSponsorship(formData: FormData) {
   try {
     const data = {
       name: formData.get("name"),
+      contactName: formData.get("contactName"),
       email: formData.get("email"),
       contactNumber: formData.get("contactNumber"),
       tierId: formData.get("tierId"),
@@ -108,6 +111,7 @@ export async function processSponsorship(formData: FormData) {
 
     const {
       name,
+      contactName,
       email,
       contactNumber,
       tierId,
@@ -147,6 +151,7 @@ export async function processSponsorship(formData: FormData) {
     console.log({
       sponsor: {
         name,
+        contactName,
         email,
         contactNumber,
       },
