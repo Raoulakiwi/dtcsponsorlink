@@ -47,13 +47,16 @@ const formSchema = z.object({
   tierId: z.string({
     required_error: "You need to select a sponsorship tier.",
   }),
-  socialsImage: z.any().superRefine((val, ctx) => {
-    const files = val as FileList | null;
+  socialsImage: z.any().superRefine((files, ctx) => {
     if (!files || files.length === 0) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Socials image is required." });
       return;
     }
     const file = files[0];
+    if (typeof file !== 'object' || !('size' in file) || !('type' in file)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid file." });
+        return;
+    }
     if (file.size <= 0) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "File cannot be empty." });
       return;
@@ -67,13 +70,16 @@ const formSchema = z.object({
       return;
     }
   }),
-  printImage: z.any().superRefine((val, ctx) => {
-    const files = val as FileList | null;
+  printImage: z.any().superRefine((files, ctx) => {
     if (!files || files.length === 0) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Print-ready image is required." });
       return;
     }
     const file = files[0];
+    if (typeof file !== 'object' || !('size' in file) || !('type' in file)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid file." });
+        return;
+    }
     if (file.size <= 0) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "File cannot be empty." });
       return;

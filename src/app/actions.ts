@@ -28,10 +28,13 @@ const sponsorshipSchema = z.object({
   email: z.string().email("Invalid email address."),
   contactNumber: z.string().min(1, "Please enter a contact number."),
   tierId: z.string().min(1, "Please select a sponsorship tier."),
-  socialsImage: z.any().superRefine((val, ctx) => {
-    const file = val as File | null;
-    if (!file || !(file instanceof File) || file.size === 0) {
+  socialsImage: z.any().superRefine((file, ctx) => {
+    if (!file || typeof file !== 'object' || !('size' in file) || !('type' in file)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Socials image is required." });
+      return;
+    }
+    if (file.size <= 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "File cannot be empty." });
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -43,10 +46,13 @@ const sponsorshipSchema = z.object({
       return;
     }
   }),
-  printImage: z.any().superRefine((val, ctx) => {
-    const file = val as File | null;
-    if (!file || !(file instanceof File) || file.size === 0) {
+  printImage: z.any().superRefine((file, ctx) => {
+    if (!file || typeof file !== 'object' || !('size' in file) || !('type' in file)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Print-ready image is required." });
+      return;
+    }
+    if (file.size <= 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "File cannot be empty." });
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
