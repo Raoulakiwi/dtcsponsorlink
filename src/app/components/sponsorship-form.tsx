@@ -49,26 +49,70 @@ const formSchema = z.object({
   }),
   socialsImage: z
     .any()
-    .refine((files) => files?.length === 1, "Socials image is required.")
-    .refine(
-      (files) => files?.[0]?.size <= MAX_FILE_SIZE,
-      `Max file size is 10MB.`
-    )
-    .refine(
-      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
-      "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted."
-    ),
+    .superRefine((files, ctx) => {
+      if (!files || files.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Socials image is required.",
+        });
+        return;
+      }
+      const file = files[0];
+      if (file.size === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "File cannot be empty.",
+        });
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Max file size is 10MB.`,
+        });
+        return;
+      }
+      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted.",
+        });
+        return;
+      }
+    }),
   printImage: z
     .any()
-    .refine((files) => files?.length === 1, "Print-ready image is required.")
-    .refine(
-      (files) => files?.[0]?.size <= MAX_FILE_SIZE,
-      `Max file size is 10MB.`
-    )
-    .refine(
-      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
-      "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted."
-    ),
+    .superRefine((files, ctx) => {
+      if (!files || files.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Print-ready image is required.",
+        });
+        return;
+      }
+      const file = files[0];
+       if (file.size === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "File cannot be empty.",
+        });
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Max file size is 10MB.`,
+        });
+        return;
+      }
+      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted.",
+        });
+        return;
+      }
+    }),
 });
 
 export default function SponsorshipForm() {

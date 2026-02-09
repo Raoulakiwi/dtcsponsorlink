@@ -30,28 +30,68 @@ const sponsorshipSchema = z.object({
   tierId: z.string().min(1, "Please select a sponsorship tier."),
   socialsImage: z
     .any()
-    .refine((file) => file instanceof File, "Socials image must be a file.")
-    .refine((file) => file.size > 0, "Socials image is required.")
-    .refine(
-      (file) => file.size <= MAX_FILE_SIZE,
-      `Max file size is 10MB.`
-    )
-    .refine(
-      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
-      "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted."
-    ),
+    .superRefine((file, ctx) => {
+      if (!(file instanceof File)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Socials image must be a file.",
+        });
+        return;
+      }
+      if (file.size === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Socials image is required.",
+        });
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Max file size is 10MB.`,
+        });
+        return;
+      }
+      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted.",
+        });
+        return;
+      }
+    }),
   printImage: z
     .any()
-    .refine((file) => file instanceof File, "Print-ready image must be a file.")
-    .refine((file) => file.size > 0, "Print-ready image is required.")
-    .refine(
-      (file) => file.size <= MAX_FILE_SIZE,
-      `Max file size is 10MB.`
-    )
-    .refine(
-      (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
-      "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted."
-    ),
+    .superRefine((file, ctx) => {
+      if (!(file instanceof File)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Print-ready image must be a file.",
+        });
+        return;
+      }
+      if (file.size === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Print-ready image is required.",
+        });
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Max file size is 10MB.`,
+        });
+        return;
+      }
+      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted.",
+        });
+        return;
+      }
+    }),
 });
 
 
