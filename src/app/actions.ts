@@ -23,48 +23,65 @@ const ACCEPTED_IMAGE_TYPES = [
   "image/tiff",
 ];
 
-const sponsorshipSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  email: z.string().email("Invalid email address."),
-  contactNumber: z.string().min(1, "Please enter a contact number."),
-  tierId: z.string().min(1, "Please select a sponsorship tier."),
-  socialsImage: z.any().superRefine((file, ctx) => {
-    if (!file || typeof file !== 'object' || !('size' in file) || !('type' in file)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Socials image is required." });
+const sponsorshipSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters."),
+    email: z.string().email("Invalid email address."),
+    contactNumber: z.string().min(1, "Please enter a contact number."),
+    tierId: z.string().min(1, "Please select a sponsorship tier."),
+    emailSeparately: z.preprocess((val) => val === "true", z.boolean()),
+    socialsImage: z.any(),
+    printImage: z.any(),
+  })
+  .superRefine(({ emailSeparately, socialsImage, printImage }, ctx) => {
+    if (emailSeparately) {
       return;
     }
-    if (file.size <= 0) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "File cannot be empty." });
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Max file size is 10MB.` });
-      return;
-    }
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted." });
-      return;
-    }
-  }),
-  printImage: z.any().superRefine((file, ctx) => {
-    if (!file || typeof file !== 'object' || !('size' in file) || !('type' in file)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Print-ready image is required." });
-      return;
-    }
-    if (file.size <= 0) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "File cannot be empty." });
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Max file size is 10MB.` });
-      return;
-    }
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted." });
-      return;
-    }
-  }),
-});
+
+    const validateFile = (
+      file: unknown,
+      fieldName: "socialsImage" | "printImage"
+    ) => {
+      const fieldDisplayName =
+        fieldName === "socialsImage" ? "Socials image" : "Print-ready image";
+
+      if (
+        !file ||
+        typeof file !== "object" ||
+        !("size" in file) ||
+        (file as { size: number }).size <= 0
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${fieldDisplayName} is required.`,
+          path: [fieldName],
+        });
+        return;
+      }
+
+      const f = file as { size: number; type: string };
+      if (f.size > MAX_FILE_SIZE) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Max file size is 10MB.`,
+          path: [fieldName],
+        });
+        return;
+      }
+      if (!ACCEPTED_IMAGE_TYPES.includes(f.type)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted.",
+          path: [fieldName],
+        });
+        return;
+      }
+    };
+
+    validateFile(socialsImage, "socialsImage");
+    validateFile(printImage, "printImage");
+  });
 
 
 export async function processSponsorship(formData: FormData) {
@@ -74,6 +91,7 @@ export async function processSponsorship(formData: FormData) {
       email: formData.get("email"),
       contactNumber: formData.get("contactNumber"),
       tierId: formData.get("tierId"),
+      emailSeparately: formData.get("emailSeparately"),
       socialsImage: formData.get("socialsImage"),
       printImage: formData.get("printImage"),
     };
@@ -88,7 +106,15 @@ export async function processSponsorship(formData: FormData) {
       };
     }
 
-    const { name, email, contactNumber, tierId, socialsImage, printImage } = parsed.data;
+    const {
+      name,
+      email,
+      contactNumber,
+      tierId,
+      emailSeparately,
+      socialsImage,
+      printImage,
+    } = parsed.data;
 
     const selectedTier = sponsorshipTiers.find((t) => t.id === tierId);
     if (!selectedTier) {
@@ -97,18 +123,22 @@ export async function processSponsorship(formData: FormData) {
 
     // --- In a real app, you would upload files to a storage service ---
     console.log("--- Mock File Upload ---");
-    console.log(
-      `Uploading socials image: ${socialsImage.name} (${(
-        socialsImage.size / 1024
-      ).toFixed(2)} KB)`
-    );
-    console.log(
-      `Uploading print image: ${printImage.name} (${(
-        printImage.size / 1024
-      ).toFixed(2)} KB)`
-    );
-    // const socialsImageUrl = await uploadFile(socialsImage);
-    // const printImageUrl = await uploadFile(printImage);
+    if (emailSeparately) {
+      console.log("Assets will be emailed separately.");
+    } else {
+      console.log(
+        `Uploading socials image: ${socialsImage.name} (${(
+          socialsImage.size / 1024
+        ).toFixed(2)} KB)`
+      );
+      console.log(
+        `Uploading print image: ${printImage.name} (${(
+          printImage.size / 1024
+        ).toFixed(2)} KB)`
+      );
+      // const socialsImageUrl = await uploadFile(socialsImage);
+      // const printImageUrl = await uploadFile(printImage);
+    }
 
     // --- In a real app, you would use an email service (e.g., SendGrid, Resend) ---
     const adminEmail = "randerson@dobmac.com.au";
@@ -123,10 +153,12 @@ export async function processSponsorship(formData: FormData) {
       tier: selectedTier.name,
       price: selectedTier.price,
       // In a real app, these would be URLs to the uploaded files
-      imageLinks: {
-        socials: `mock_url_for_${socialsImage.name}`,
-        print: `mock_url_for_${printImage.name}`,
-      },
+      imageLinks: emailSeparately
+        ? "Assets will be emailed separately"
+        : {
+            socials: `mock_url_for_${socialsImage.name}`,
+            print: `mock_url_for_${printImage.name}`,
+          },
       paymentStatus: "Pending PayPal payment",
     });
 

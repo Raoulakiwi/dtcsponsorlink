@@ -24,6 +24,7 @@ import { sponsorshipTiers } from "@/lib/data";
 import { processSponsorship } from "@/app/actions";
 import { cn } from "@/lib/utils";
 import type { SponsorshipTier } from "@/lib/types";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_IMAGE_TYPES = [
@@ -33,67 +34,75 @@ const ACCEPTED_IMAGE_TYPES = [
   "image/webp",
   "application/pdf",
   "image/vnd.adobe.photoshop",
-  "image/tiff"
+  "image/tiff",
 ];
 
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  contactNumber: z.string().min(1, "Please enter a contact number."),
-  tierId: z.string({
-    required_error: "You need to select a sponsorship tier.",
-  }),
-  socialsImage: z.any().superRefine((files, ctx) => {
-    if (!files || files.length === 0) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Socials image is required." });
+const formSchema = z
+  .object({
+    name: z.string().min(2, {
+      message: "Name must be at least 2 characters.",
+    }),
+    email: z.string().email({
+      message: "Please enter a valid email address.",
+    }),
+    contactNumber: z.string().min(1, "Please enter a contact number."),
+    tierId: z.string({
+      required_error: "You need to select a sponsorship tier.",
+    }),
+    emailSeparately: z.boolean().default(false),
+    socialsImage: z.any(),
+    printImage: z.any(),
+  })
+  .superRefine(({ emailSeparately, socialsImage, printImage }, ctx) => {
+    if (emailSeparately) {
       return;
     }
-    const file = files[0];
-    if (typeof file !== 'object' || !('size' in file) || !('type' in file)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid file." });
+
+    const validateFile = (
+      files: unknown,
+      fieldName: "socialsImage" | "printImage"
+    ) => {
+      const fieldDisplayName =
+        fieldName === "socialsImage" ? "Socials image" : "Print-ready image";
+      if (!(files instanceof FileList) || files.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${fieldDisplayName} is required.`,
+          path: [fieldName],
+        });
         return;
-    }
-    if (file.size <= 0) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "File cannot be empty." });
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Max file size is 10MB.` });
-      return;
-    }
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted." });
-      return;
-    }
-  }),
-  printImage: z.any().superRefine((files, ctx) => {
-    if (!files || files.length === 0) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Print-ready image is required." });
-      return;
-    }
-    const file = files[0];
-    if (typeof file !== 'object' || !('size' in file) || !('type' in file)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid file." });
+      }
+      const file = files[0];
+      if (file.size <= 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "File cannot be empty.",
+          path: [fieldName],
+        });
         return;
-    }
-    if (file.size <= 0) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "File cannot be empty." });
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Max file size is 10MB.` });
-      return;
-    }
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted." });
-      return;
-    }
-  }),
-});
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Max file size is 10MB.`,
+          path: [fieldName],
+        });
+        return;
+      }
+      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Only .jpg, .jpeg, .png, .webp, .pdf, .psd, and .tiff files are accepted.",
+          path: [fieldName],
+        });
+        return;
+      }
+    };
+
+    validateFile(socialsImage, "socialsImage");
+    validateFile(printImage, "printImage");
+  });
 
 export default function SponsorshipForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -105,6 +114,7 @@ export default function SponsorshipForm() {
       name: "",
       email: "",
       contactNumber: "",
+      emailSeparately: false,
     },
   });
 
@@ -115,8 +125,12 @@ export default function SponsorshipForm() {
     formData.append("email", values.email);
     formData.append("contactNumber", values.contactNumber);
     formData.append("tierId", values.tierId);
-    formData.append("socialsImage", values.socialsImage[0]);
-    formData.append("printImage", values.printImage[0]);
+    formData.append("emailSeparately", String(values.emailSeparately));
+
+    if (!values.emailSeparately) {
+      formData.append("socialsImage", values.socialsImage[0]);
+      formData.append("printImage", values.printImage[0]);
+    }
 
     const result = await processSponsorship(formData);
 
@@ -139,15 +153,18 @@ export default function SponsorshipForm() {
 
   const socialsImageRef = form.register("socialsImage");
   const printImageRef = form.register("printImage");
-  
+
   const selectedTierId = form.watch("tierId");
+  const emailSeparately = form.watch("emailSeparately");
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Sponsor Details</CardTitle>
+            <CardTitle className="font-headline text-2xl">
+              Sponsor Details
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <FormField
@@ -157,7 +174,10 @@ export default function SponsorshipForm() {
                 <FormItem>
                   <FormLabel>Full Name / Company Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. John Smith or Smith Co." {...field} />
+                    <Input
+                      placeholder="e.g. John Smith or Smith Co."
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -194,7 +214,9 @@ export default function SponsorshipForm() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Select a Tier</CardTitle>
+            <CardTitle className="font-headline text-2xl">
+              Select a Tier
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <FormField
@@ -211,18 +233,26 @@ export default function SponsorshipForm() {
                       {sponsorshipTiers.map((tier) => (
                         <FormItem key={tier.id}>
                           <FormControl>
-                            <RadioGroupItem value={tier.id} className="sr-only" />
+                            <RadioGroupItem
+                              value={tier.id}
+                              className="sr-only"
+                            />
                           </FormControl>
                           <FormLabel
                             className={cn(
                               "flex flex-col h-full p-6 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50",
-                              field.value === tier.id && "border-primary ring-2 ring-primary"
+                              field.value === tier.id &&
+                                "border-primary ring-2 ring-primary"
                             )}
                           >
                             <div className="flex justify-between items-start">
                               <div className="space-y-1">
-                                <h3 className="font-headline text-xl font-semibold">{tier.name}</h3>
-                                <p className="text-2xl font-bold">${tier.price}</p>
+                                <h3 className="font-headline text-xl font-semibold">
+                                  {tier.name}
+                                </h3>
+                                <p className="text-2xl font-bold">
+                                  ${tier.price}
+                                </p>
                               </div>
                               <tier.icon className="w-8 h-8 text-accent" />
                             </div>
@@ -248,10 +278,38 @@ export default function SponsorshipForm() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Upload Assets</CardTitle>
-            <FormDescription>
-              Please provide a logo for social media and a high-resolution version for print.
-            </FormDescription>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+              <div className="space-y-1.5">
+                <CardTitle className="font-headline text-2xl">
+                  Upload Assets
+                </CardTitle>
+                <FormDescription>
+                  Please provide a logo for social media and a
+                  high-resolution version for print.
+                </FormDescription>
+              </div>
+              <FormField
+                control={form.control}
+                name="emailSeparately"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-2 space-y-0 bg-secondary p-3 rounded-md">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        id="email-separately"
+                      />
+                    </FormControl>
+                    <FormLabel
+                      htmlFor="email-separately"
+                      className="font-normal whitespace-nowrap"
+                    >
+                      Email Separately
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+            </div>
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 gap-6">
             <FormField
@@ -261,12 +319,19 @@ export default function SponsorshipForm() {
                 <FormItem>
                   <FormLabel>Logo for Socials</FormLabel>
                   <FormControl>
-                     <div className="relative">
-                        <UploadCloud className="absolute top-1/2 left-4 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <Input type="file" className="pl-12" {...socialsImageRef} />
-                     </div>
+                    <div className="relative">
+                      <UploadCloud className="absolute top-1/2 left-4 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Input
+                        type="file"
+                        className="pl-12"
+                        {...socialsImageRef}
+                        disabled={emailSeparately}
+                      />
+                    </div>
                   </FormControl>
-                  <FormDescription>Square format (PNG, JPG, WebP)</FormDescription>
+                  <FormDescription>
+                    Square format (PNG, JPG, WebP)
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -278,12 +343,19 @@ export default function SponsorshipForm() {
                 <FormItem>
                   <FormLabel>Logo for Printing</FormLabel>
                   <FormControl>
-                     <div className="relative">
-                        <UploadCloud className="absolute top-1/2 left-4 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <Input type="file" className="pl-12" {...printImageRef} />
-                     </div>
+                    <div className="relative">
+                      <UploadCloud className="absolute top-1/2 left-4 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Input
+                        type="file"
+                        className="pl-12"
+                        {...printImageRef}
+                        disabled={emailSeparately}
+                      />
+                    </div>
                   </FormControl>
-                  <FormDescription>High-res vector (PDF, EPS) or image (PSD, TIFF)</FormDescription>
+                  <FormDescription>
+                    High-res vector (PDF, EPS) or image (PSD, TIFF)
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -292,8 +364,8 @@ export default function SponsorshipForm() {
         </Card>
 
         <div className="flex justify-end">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             size="lg"
             className="bg-accent text-accent-foreground hover:bg-accent/90"
             disabled={isSubmitting || !selectedTierId}
@@ -305,7 +377,10 @@ export default function SponsorshipForm() {
                 Processing...
               </>
             ) : (
-              `Sponsor for $${sponsorshipTiers.find(t => t.id === selectedTierId)?.price ?? '...'}`
+              `Sponsor for $${
+                sponsorshipTiers.find((t) => t.id === selectedTierId)?.price ??
+                "..."
+              }`
             )}
           </Button>
         </div>
