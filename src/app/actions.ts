@@ -1,7 +1,16 @@
 "use server";
 
 import { z } from "zod";
-import { sponsorshipTiers } from "@/lib/data";
+
+// This data is intentionally duplicated from lib/data.ts to avoid
+// importing client-side 'lucide-react' components into a server action.
+const sponsorshipTiers = [
+  { id: "naming-rights", name: "Naming Rights", price: 5000 },
+  { id: "platinum", name: "Platinum", price: 2000 },
+  { id: "gold", name: "Gold", price: 1000 },
+  { id: "silver", name: "Silver", price: 500 },
+  { id: "bronze", name: "Bronze", price: 300 },
+];
 
 const sponsorshipSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
