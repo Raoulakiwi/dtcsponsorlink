@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { insertSponsor } from "@/lib/db";
 
 // This data is intentionally duplicated from lib/data.ts to avoid
 // importing client-side 'lucide-react' components into a server action.
@@ -123,6 +124,22 @@ export async function processSponsorship(formData: FormData) {
     const selectedTier = sponsorshipTiers.find((t) => t.id === tierId);
     if (!selectedTier) {
       return { success: false, error: "Invalid tier selected." };
+    }
+
+    const sponsorInsert = await insertSponsor({
+      name,
+      contactName,
+      email,
+      contactNumber,
+      tierId,
+      tierName: selectedTier.name,
+      tierPrice: selectedTier.price,
+      emailSeparately,
+      socialsImageName: emailSeparately ? null : (socialsImage as { name?: string })?.name ?? null,
+      printImageName: emailSeparately ? null : (printImage as { name?: string })?.name ?? null,
+    });
+    if (!sponsorInsert.ok) {
+      console.error("Failed to save sponsor:", sponsorInsert.error);
     }
 
     // --- In a real app, you would upload files to a storage service ---
