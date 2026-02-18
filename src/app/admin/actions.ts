@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { verifyAdmin, updateAdminPassword, insertSponsor } from "@/lib/db";
+import { verifyAdmin, updateAdminPassword, insertSponsor, updateSponsor } from "@/lib/db";
 import { tierOptions } from "@/lib/tiers";
 import {
   getSession,
@@ -91,6 +91,8 @@ export async function createSponsor(formData: FormData) {
   const emailSeparately = formData.get("emailSeparately") === "on";
   const socialsImageName = (formData.get("socialsImageName") as string)?.trim() || null;
   const printImageName = (formData.get("printImageName") as string)?.trim() || null;
+  const sponsorshipStartDate = (formData.get("sponsorshipStartDate") as string)?.trim() || null;
+  const renewalDate = (formData.get("renewalDate") as string)?.trim() || null;
 
   if (!name || name.length < 2) {
     redirect(`/admin/sponsors/new?error=${encodeURIComponent("Name must be at least 2 characters.")}`);
@@ -120,6 +122,8 @@ export async function createSponsor(formData: FormData) {
     emailSeparately,
     socialsImageName,
     printImageName,
+    sponsorshipStartDate,
+    renewalDate,
   });
 
   if (!result.ok) {
@@ -128,4 +132,54 @@ export async function createSponsor(formData: FormData) {
     );
   }
   redirect("/admin?added=1");
+}
+
+function editErrorRedirect(id: string, error: string) {
+  redirect(`/admin/sponsors/${id}/edit?error=${encodeURIComponent(error)}`);
+}
+
+export async function updateSponsorAction(formData: FormData) {
+  const session = await getSession();
+  if (!session) redirect("/admin/login");
+
+  const id = formData.get("id") as string;
+  if (!id) redirect("/admin");
+
+  const name = (formData.get("name") as string)?.trim();
+  const contactName = (formData.get("contactName") as string)?.trim();
+  const email = (formData.get("email") as string)?.trim();
+  const contactNumber = (formData.get("contactNumber") as string)?.trim();
+  const tierId = formData.get("tierId") as string;
+  const emailSeparately = formData.get("emailSeparately") === "on";
+  const socialsImageName = (formData.get("socialsImageName") as string)?.trim() || null;
+  const printImageName = (formData.get("printImageName") as string)?.trim() || null;
+  const sponsorshipStartDate = (formData.get("sponsorshipStartDate") as string)?.trim() || null;
+  const renewalDate = (formData.get("renewalDate") as string)?.trim() || null;
+
+  if (!name || name.length < 2) editErrorRedirect(id, "Name must be at least 2 characters.");
+  if (!contactName || contactName.length < 2) editErrorRedirect(id, "Contact name must be at least 2 characters.");
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) editErrorRedirect(id, "Please enter a valid email address.");
+  if (!contactNumber?.trim()) editErrorRedirect(id, "Please enter a contact number.");
+  const tier = tierOptions.find((t) => t.id === tierId);
+  if (!tier) editErrorRedirect(id, "Please select a sponsorship tier.");
+
+  const result = await updateSponsor(id, {
+    name,
+    contactName,
+    email,
+    contactNumber: contactNumber.trim(),
+    tierId: tier.id,
+    tierName: tier.name,
+    tierPrice: tier.price,
+    emailSeparately,
+    socialsImageName,
+    printImageName,
+    sponsorshipStartDate,
+    renewalDate,
+  });
+
+  if (!result.ok) {
+    editErrorRedirect(id, result.error ?? "Failed to save changes.");
+  }
+  redirect("/admin?updated=1");
 }

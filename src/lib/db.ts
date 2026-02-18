@@ -18,6 +18,8 @@ export type Sponsor = {
   email_separately: boolean;
   socials_image_name: string | null;
   print_image_name: string | null;
+  sponsorship_start_date: string | null;
+  renewal_date: string | null;
   created_at: Date;
 };
 
@@ -54,6 +56,12 @@ export async function ensureSchema() {
     const passwordHash = await hash(DEFAULT_ADMIN_PASSWORD, 10);
     await sql`INSERT INTO admin_users (username, password_hash) VALUES ('admin', ${passwordHash})`;
   }
+  try {
+    await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS sponsorship_start_date DATE`;
+    await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS renewal_date DATE`;
+  } catch (_) {
+    // Columns may already exist
+  }
 }
 
 export async function insertSponsor(data: {
@@ -67,6 +75,8 @@ export async function insertSponsor(data: {
   emailSeparately: boolean;
   socialsImageName?: string | null;
   printImageName?: string | null;
+  sponsorshipStartDate?: string | null;
+  renewalDate?: string | null;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!sql) return { ok: false, error: "Database not configured" };
   try {
@@ -75,11 +85,13 @@ export async function insertSponsor(data: {
       INSERT INTO sponsors (
         name, contact_name, email, contact_number,
         tier_id, tier_name, tier_price, email_separately,
-        socials_image_name, print_image_name
+        socials_image_name, print_image_name,
+        sponsorship_start_date, renewal_date
       ) VALUES (
         ${data.name}, ${data.contactName}, ${data.email}, ${data.contactNumber},
         ${data.tierId}, ${data.tierName}, ${data.tierPrice}, ${data.emailSeparately},
-        ${data.socialsImageName ?? null}, ${data.printImageName ?? null}
+        ${data.socialsImageName ?? null}, ${data.printImageName ?? null},
+        ${data.sponsorshipStartDate || null}, ${data.renewalDate || null}
       )
     `;
     return { ok: true };
@@ -96,7 +108,8 @@ export async function getSponsors(): Promise<Sponsor[]> {
     const rows = await sql`
       SELECT id, name, contact_name, email, contact_number,
              tier_id, tier_name, tier_price, email_separately,
-             socials_image_name, print_image_name, created_at
+             socials_image_name, print_image_name,
+             sponsorship_start_date, renewal_date, created_at
       FROM sponsors
       ORDER BY created_at DESC
     `;
@@ -104,6 +117,69 @@ export async function getSponsors(): Promise<Sponsor[]> {
   } catch (e) {
     console.error("getSponsors:", e);
     return [];
+  }
+}
+
+export async function getSponsor(id: string): Promise<Sponsor | null> {
+  if (!sql) return null;
+  try {
+    await ensureSchema();
+    const rows = await sql`
+      SELECT id, name, contact_name, email, contact_number,
+             tier_id, tier_name, tier_price, email_separately,
+             socials_image_name, print_image_name,
+             sponsorship_start_date, renewal_date, created_at
+      FROM sponsors
+      WHERE id = ${id}
+      LIMIT 1
+    `;
+    return (rows[0] as Sponsor) ?? null;
+  } catch (e) {
+    console.error("getSponsor:", e);
+    return null;
+  }
+}
+
+export async function updateSponsor(
+  id: string,
+  data: {
+    name: string;
+    contactName: string;
+    email: string;
+    contactNumber: string;
+    tierId: string;
+    tierName: string;
+    tierPrice: number;
+    emailSeparately: boolean;
+    socialsImageName?: string | null;
+    printImageName?: string | null;
+    sponsorshipStartDate?: string | null;
+    renewalDate?: string | null;
+  }
+): Promise<{ ok: boolean; error?: string }> {
+  if (!sql) return { ok: false, error: "Database not configured" };
+  try {
+    await ensureSchema();
+    await sql`
+      UPDATE sponsors SET
+        name = ${data.name},
+        contact_name = ${data.contactName},
+        email = ${data.email},
+        contact_number = ${data.contactNumber},
+        tier_id = ${data.tierId},
+        tier_name = ${data.tierName},
+        tier_price = ${data.tierPrice},
+        email_separately = ${data.emailSeparately},
+        socials_image_name = ${data.socialsImageName ?? null},
+        print_image_name = ${data.printImageName ?? null},
+        sponsorship_start_date = ${data.sponsorshipStartDate || null},
+        renewal_date = ${data.renewalDate || null}
+      WHERE id = ${id}
+    `;
+    return { ok: true };
+  } catch (e) {
+    console.error("updateSponsor:", e);
+    return { ok: false, error: e instanceof Error ? e.message : "Database error" };
   }
 }
 

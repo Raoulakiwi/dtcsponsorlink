@@ -1,7 +1,8 @@
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { createSponsor } from "@/app/admin/actions";
+import { getSponsor } from "@/lib/db";
+import { updateSponsorAction } from "@/app/admin/actions";
 import { tierOptions } from "@/lib/tiers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,14 +12,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default async function NewSponsorPage({
+export default async function EditSponsorPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/admin/login");
-  const params = await searchParams;
+  const { id } = await params;
+  const sponsor = await getSponsor(id);
+  if (!sponsor) notFound();
+  const search = await searchParams;
 
   return (
     <div className="max-w-2xl">
@@ -29,24 +35,23 @@ export default async function NewSponsorPage({
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to dashboard
       </Link>
-      <h1 className="font-headline text-2xl font-bold mb-6">Add sponsor</h1>
-      <p className="text-muted-foreground mb-6">
-        Enter the same details that would be submitted from the public sponsorship form.
-      </p>
-      <form action={createSponsor} className="space-y-6">
+      <h1 className="font-headline text-2xl font-bold mb-6">Edit sponsor</h1>
+      <form action={updateSponsorAction} className="space-y-6">
+        <input type="hidden" name="id" value={sponsor.id} />
         <Card>
           <CardHeader>
             <CardTitle className="font-headline text-lg">Sponsor details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {params.error && (
-              <p className="text-sm text-destructive">{params.error}</p>
+            {search.error && (
+              <p className="text-sm text-destructive">{search.error}</p>
             )}
             <div className="space-y-2">
               <Label htmlFor="name">Full Name / Company Name</Label>
               <Input
                 id="name"
                 name="name"
+                defaultValue={sponsor.name}
                 placeholder="e.g. John Smith or Smith Co."
                 required
                 minLength={2}
@@ -57,6 +62,7 @@ export default async function NewSponsorPage({
               <Input
                 id="contactName"
                 name="contactName"
+                defaultValue={sponsor.contact_name}
                 placeholder="e.g. Jane Doe"
                 required
                 minLength={2}
@@ -68,6 +74,7 @@ export default async function NewSponsorPage({
                 id="email"
                 name="email"
                 type="email"
+                defaultValue={sponsor.email}
                 placeholder="you@company.com"
                 required
               />
@@ -77,6 +84,7 @@ export default async function NewSponsorPage({
               <Input
                 id="contactNumber"
                 name="contactNumber"
+                defaultValue={sponsor.contact_number}
                 placeholder="e.g. 0412 345 678"
                 required
               />
@@ -88,7 +96,7 @@ export default async function NewSponsorPage({
           <CardHeader>
             <CardTitle className="font-headline text-lg">Dates</CardTitle>
             <p className="text-sm text-muted-foreground font-normal">
-              Initial sponsorship date and when it is up for renewal (optional).
+              Initial sponsorship date and when it is up for renewal.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -98,6 +106,7 @@ export default async function NewSponsorPage({
                 id="sponsorshipStartDate"
                 name="sponsorshipStartDate"
                 type="date"
+                defaultValue={sponsor.sponsorship_start_date ?? ""}
               />
             </div>
             <div className="space-y-2">
@@ -106,6 +115,7 @@ export default async function NewSponsorPage({
                 id="renewalDate"
                 name="renewalDate"
                 type="date"
+                defaultValue={sponsor.renewal_date ?? ""}
               />
             </div>
           </CardContent>
@@ -126,6 +136,7 @@ export default async function NewSponsorPage({
                   "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
                   "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 )}
+                defaultValue={sponsor.tier_id}
               >
                 <option value="">Select a tier</option>
                 {tierOptions.map((tier) => (
@@ -141,13 +152,15 @@ export default async function NewSponsorPage({
         <Card>
           <CardHeader>
             <CardTitle className="font-headline text-lg">Assets (optional)</CardTitle>
-            <p className="text-sm text-muted-foreground font-normal">
-              If they will email assets separately or you have file names to record, use the options below.
-            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center space-x-2">
-              <Checkbox id="emailSeparately" name="emailSeparately" value="on" />
+              <Checkbox
+                id="emailSeparately"
+                name="emailSeparately"
+                value="on"
+                defaultChecked={sponsor.email_separately}
+              />
               <Label htmlFor="emailSeparately" className="font-normal">
                 Assets will be emailed separately
               </Label>
@@ -157,6 +170,7 @@ export default async function NewSponsorPage({
               <Input
                 id="socialsImageName"
                 name="socialsImageName"
+                defaultValue={sponsor.socials_image_name ?? ""}
                 placeholder="e.g. logo-socials.png or leave blank"
               />
             </div>
@@ -165,6 +179,7 @@ export default async function NewSponsorPage({
               <Input
                 id="printImageName"
                 name="printImageName"
+                defaultValue={sponsor.print_image_name ?? ""}
                 placeholder="e.g. logo-print.pdf or leave blank"
               />
             </div>
@@ -173,7 +188,7 @@ export default async function NewSponsorPage({
 
         <div className="flex gap-4">
           <Button type="submit" className="bg-accent text-accent-foreground hover:bg-accent/90">
-            Add sponsor
+            Save changes
           </Button>
           <Button type="button" variant="outline" asChild>
             <Link href="/admin">Cancel</Link>

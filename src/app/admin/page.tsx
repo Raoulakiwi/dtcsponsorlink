@@ -12,13 +12,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { format } from "date-fns";
+import { Plus, Pencil } from "lucide-react";
+import { format, parseISO } from "date-fns";
 
 export default async function AdminDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ added?: string }>;
+  searchParams: Promise<{ added?: string; updated?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/admin/login");
@@ -40,6 +40,11 @@ export default async function AdminDashboardPage({
           Sponsor added successfully.
         </p>
       )}
+      {params.updated === "1" && (
+        <p className="mb-4 text-sm text-green-600 dark:text-green-400">
+          Sponsor updated successfully.
+        </p>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-lg">All submissions</CardTitle>
@@ -57,7 +62,9 @@ export default async function AdminDashboardPage({
                   <TableHead>Phone</TableHead>
                   <TableHead>Tier</TableHead>
                   <TableHead>Assets</TableHead>
-                  <TableHead>Submitted</TableHead>
+                  <TableHead>Start date</TableHead>
+                  <TableHead>Renewal date</TableHead>
+                  <TableHead className="w-[80px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -76,7 +83,21 @@ export default async function AdminDashboardPage({
                         : [s.socials_image_name, s.print_image_name].filter(Boolean).join(", ") || "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {format(new Date(s.created_at), "PPp")}
+                      {s.sponsorship_start_date
+                        ? format(parseISO(s.sponsorship_start_date), "PP")
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {s.renewal_date
+                        ? format(parseISO(s.renewal_date), "PP")
+                        : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" asChild aria-label="Edit sponsor">
+                        <Link href={`/admin/sponsors/${s.id}/edit`}>
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
