@@ -1,7 +1,9 @@
 import { neon } from "@neondatabase/serverless";
 import { hash } from "bcryptjs";
 
-const connectionString = process.env.DATABASE_URL;
+// Support both DATABASE_URL and POSTGRES_URL (Vercel/Neon templates use POSTGRES_URL)
+const connectionString =
+  process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? null;
 const sql = connectionString ? neon(connectionString) : null;
 
 export type Sponsor = {
