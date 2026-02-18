@@ -11,8 +11,19 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
+import { format, parseISO, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DeleteSponsorButton } from "./delete-sponsor-button";
+
+function toDateInputValue(value: string | Date | null | undefined): string {
+  if (value == null) return "";
+  try {
+    const date = typeof value === "string" ? parseISO(value) : value;
+    return isValid(date) ? format(date, "yyyy-MM-dd") : "";
+  } catch {
+    return "";
+  }
+}
 
 export default async function EditSponsorPage({
   params,
@@ -108,7 +119,7 @@ export default async function EditSponsorPage({
                 id="sponsorshipStartDate"
                 name="sponsorshipStartDate"
                 type="date"
-                defaultValue={sponsor.sponsorship_start_date ?? ""}
+                defaultValue={toDateInputValue(sponsor.sponsorship_start_date)}
               />
             </div>
             <div className="space-y-2">
@@ -117,7 +128,7 @@ export default async function EditSponsorPage({
                 id="renewalDate"
                 name="renewalDate"
                 type="date"
-                defaultValue={sponsor.renewal_date ?? ""}
+                defaultValue={toDateInputValue(sponsor.renewal_date)}
               />
             </div>
           </CardContent>
@@ -221,9 +232,7 @@ export default async function EditSponsorPage({
           <Button type="button" variant="outline" asChild>
             <Link href="/admin">Cancel</Link>
           </Button>
-          {!sponsor.inactive && (
-            <DeleteSponsorButton sponsorId={sponsor.id} />
-          )}
+          <DeleteSponsorButton sponsorId={sponsor.id} isArchived={sponsor.inactive} />
         </div>
         {sponsor.inactive && (
           <p className="mt-4 text-sm text-muted-foreground">

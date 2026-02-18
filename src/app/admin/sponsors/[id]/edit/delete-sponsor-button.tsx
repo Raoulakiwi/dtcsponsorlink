@@ -1,19 +1,35 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Archive } from "lucide-react";
 import { deleteSponsorAction } from "@/app/admin/actions";
 import { useState } from "react";
 
-export function DeleteSponsorButton({ sponsorId }: { sponsorId: string }) {
+export function DeleteSponsorButton({ sponsorId, isArchived }: { sponsorId: string; isArchived?: boolean }) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   async function handleDelete() {
+    if (isArchived) return;
     if (!confirm("Move this sponsor to archived? They will no longer appear in Active sponsors. You can still view and edit them in Archived.")) {
       return;
     }
     setIsDeleting(true);
     await deleteSponsorAction(sponsorId);
+  }
+
+  if (isArchived) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        disabled
+        className="text-muted-foreground"
+        title="This sponsor is already in Archived"
+      >
+        <Archive className="mr-2 h-4 w-4" />
+        Already archived
+      </Button>
+    );
   }
 
   return (
