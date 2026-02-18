@@ -10,18 +10,34 @@ import {
 } from "@/lib/auth";
 
 export async function login(formData: FormData) {
-  const username = (formData.get("username") as string)?.trim();
-  const password = formData.get("password") as string;
-  if (!username || !password) {
-    redirect(`/admin/login?error=${encodeURIComponent("Username and password are required.")}`);
+  try {
+    const username = (formData.get("username") as string)?.trim();
+    const password = formData.get("password") as string;
+    if (!username || !password) {
+      redirect(`/admin/login?error=${encodeURIComponent("Username and password are required.")}`);
+    }
+    const valid = await verifyAdmin(username, password);
+    if (!valid) {
+      redirect(`/admin/login?error=${encodeURIComponent("Invalid username or password.")}`);
+    }
+    const cookie = createSessionCookie(username);
+    if (!cookie) {
+      redirect(
+        `/admin/login?error=${encodeURIComponent("Server configuration error: ADMIN_SESSION_SECRET is not set (min 16 characters). Add it in Vercel project settings.")}`
+      );
+    }
+    await setSessionCookie(cookie);
+    redirect("/admin");
+  } catch (e) {
+    const err = e as { digest?: string } | null;
+    if (err && typeof err === "object" && typeof err.digest === "string" && err.digest.startsWith("NEXT_REDIRECT")) {
+      throw e;
+    }
+    console.error("Admin login error:", e);
+    redirect(
+      `/admin/login?error=${encodeURIComponent("Login failed. Please try again or check server logs.")}`
+    );
   }
-  const valid = await verifyAdmin(username, password);
-  if (!valid) {
-    redirect(`/admin/login?error=${encodeURIComponent("Invalid username or password.")}`);
-  }
-  const cookie = createSessionCookie(username);
-  await setSessionCookie(cookie);
-  redirect("/admin");
 }
 
 export async function logout() {

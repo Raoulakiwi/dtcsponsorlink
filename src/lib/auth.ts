@@ -4,25 +4,29 @@ import { createHmac, timingSafeEqual } from "crypto";
 const COOKIE_NAME = "admin_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
-function getSecret(): string {
+/** Returns the secret or null if not set (avoids throwing in getSession). */
+function getSecret(): string | null {
   const secret = process.env.ADMIN_SESSION_SECRET;
-  if (!secret || secret.length < 16) {
-    throw new Error("ADMIN_SESSION_SECRET must be set and at least 16 characters");
-  }
+  if (!secret || secret.length < 16) return null;
   return secret;
 }
 
-function sign(payload: string): string {
-  return createHmac("sha256", getSecret()).update(payload).digest("hex");
+function sign(payload: string): string | null {
+  const secret = getSecret();
+  if (!secret) return null;
+  return createHmac("sha256", secret).update(payload).digest("hex");
 }
 
-export function createSessionCookie(username: string): string {
+/** Returns cookie value or null if ADMIN_SESSION_SECRET is not configured. */
+export function createSessionCookie(username: string): string | null {
   const payload = `${username}:${Date.now() + SESSION_MAX_AGE * 1000}`;
-  const signature = sign(payload);
-  return Buffer.from(`${payload}.${signature}`).toString("base64url");
+  const sig = sign(payload);
+  if (!sig) return null;
+  return Buffer.from(`${payload}.${sig}`).toString("base64url");
 }
 
 export async function getSession(): Promise<{ username: string } | null> {
+  if (!getSecret()) return null;
   const cookieStore = await cookies();
   const raw = cookieStore.get(COOKIE_NAME)?.value;
   if (!raw) return null;
@@ -31,7 +35,7 @@ export async function getSession(): Promise<{ username: string } | null> {
     const [payload, signature] = decoded.split(".");
     if (!payload || !signature) return null;
     const expected = sign(payload);
-    if (signature.length !== expected.length || !timingSafeEqual(Buffer.from(signature, "utf8"), Buffer.from(expected, "utf8"))) {
+    if (!expected || signature.length !== expected.length || !timingSafeEqual(Buffer.from(signature, "utf8"), Buffer.from(expected, "utf8"))) {
       return null;
     }
     const [username, expStr] = payload.split(":");
