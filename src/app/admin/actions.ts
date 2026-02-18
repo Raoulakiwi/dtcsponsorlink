@@ -93,6 +93,8 @@ export async function createSponsor(formData: FormData) {
   const printImageName = (formData.get("printImageName") as string)?.trim() || null;
   const sponsorshipStartDate = (formData.get("sponsorshipStartDate") as string)?.trim() || null;
   const renewalDate = (formData.get("renewalDate") as string)?.trim() || null;
+  const customAmountRaw = formData.get("customAmount") as string;
+  const customAmountNote = (formData.get("customAmountNote") as string)?.trim() || null;
 
   if (!name || name.length < 2) {
     redirect(`/admin/sponsors/new?error=${encodeURIComponent("Name must be at least 2 characters.")}`);
@@ -106,9 +108,32 @@ export async function createSponsor(formData: FormData) {
   if (!contactNumber?.trim()) {
     redirect(`/admin/sponsors/new?error=${encodeURIComponent("Please enter a contact number.")}`);
   }
-  const tier = tierOptions.find((t) => t.id === tierId);
-  if (!tier) {
-    redirect(`/admin/sponsors/new?error=${encodeURIComponent("Please select a sponsorship tier.")}`);
+
+  let tierIdFinal: string;
+  let tierNameFinal: string;
+  let tierPriceFinal: number;
+  let customNoteFinal: string | null = null;
+
+  if (tierId === "custom") {
+    const amount = customAmountRaw ? Number(customAmountRaw) : NaN;
+    if (Number.isNaN(amount) || amount < 0) {
+      redirect(`/admin/sponsors/new?error=${encodeURIComponent("Please enter a valid custom amount (0 or more).")}`);
+    }
+    if (!customAmountNote || customAmountNote.length < 1) {
+      redirect(`/admin/sponsors/new?error=${encodeURIComponent("A note is required when using a custom sponsorship amount.")}`);
+    }
+    tierIdFinal = "custom";
+    tierNameFinal = "Custom";
+    tierPriceFinal = Math.round(amount);
+    customNoteFinal = customAmountNote;
+  } else {
+    const tier = tierOptions.find((t) => t.id === tierId);
+    if (!tier) {
+      redirect(`/admin/sponsors/new?error=${encodeURIComponent("Please select a sponsorship tier.")}`);
+    }
+    tierIdFinal = tier.id;
+    tierNameFinal = tier.name;
+    tierPriceFinal = tier.price;
   }
 
   const result = await insertSponsor({
@@ -116,14 +141,15 @@ export async function createSponsor(formData: FormData) {
     contactName,
     email,
     contactNumber: contactNumber.trim(),
-    tierId: tier.id,
-    tierName: tier.name,
-    tierPrice: tier.price,
+    tierId: tierIdFinal,
+    tierName: tierNameFinal,
+    tierPrice: tierPriceFinal,
     emailSeparately,
     socialsImageName,
     printImageName,
     sponsorshipStartDate,
     renewalDate,
+    customAmountNote: customNoteFinal,
   });
 
   if (!result.ok) {
@@ -155,27 +181,49 @@ export async function updateSponsorAction(formData: FormData) {
   const printImageName = (formData.get("printImageName") as string)?.trim() || null;
   const sponsorshipStartDate = (formData.get("sponsorshipStartDate") as string)?.trim() || null;
   const renewalDate = (formData.get("renewalDate") as string)?.trim() || null;
+  const customAmountRaw = formData.get("customAmount") as string;
+  const customAmountNote = (formData.get("customAmountNote") as string)?.trim() || null;
 
   if (!name || name.length < 2) editErrorRedirect(id, "Name must be at least 2 characters.");
   if (!contactName || contactName.length < 2) editErrorRedirect(id, "Contact name must be at least 2 characters.");
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) editErrorRedirect(id, "Please enter a valid email address.");
   if (!contactNumber?.trim()) editErrorRedirect(id, "Please enter a contact number.");
-  const tier = tierOptions.find((t) => t.id === tierId);
-  if (!tier) editErrorRedirect(id, "Please select a sponsorship tier.");
+
+  let tierIdFinal: string;
+  let tierNameFinal: string;
+  let tierPriceFinal: number;
+  let customNoteFinal: string | null = null;
+
+  if (tierId === "custom") {
+    const amount = customAmountRaw ? Number(customAmountRaw) : NaN;
+    if (Number.isNaN(amount) || amount < 0) editErrorRedirect(id, "Please enter a valid custom amount (0 or more).");
+    if (!customAmountNote || customAmountNote.length < 1) editErrorRedirect(id, "A note is required when using a custom sponsorship amount.");
+    tierIdFinal = "custom";
+    tierNameFinal = "Custom";
+    tierPriceFinal = Math.round(amount);
+    customNoteFinal = customAmountNote;
+  } else {
+    const tier = tierOptions.find((t) => t.id === tierId);
+    if (!tier) editErrorRedirect(id, "Please select a sponsorship tier.");
+    tierIdFinal = tier.id;
+    tierNameFinal = tier.name;
+    tierPriceFinal = tier.price;
+  }
 
   const result = await updateSponsor(id, {
     name,
     contactName,
     email,
     contactNumber: contactNumber.trim(),
-    tierId: tier.id,
-    tierName: tier.name,
-    tierPrice: tier.price,
+    tierId: tierIdFinal,
+    tierName: tierNameFinal,
+    tierPrice: tierPriceFinal,
     emailSeparately,
     socialsImageName,
     printImageName,
     sponsorshipStartDate,
     renewalDate,
+    customAmountNote: customNoteFinal,
   });
 
   if (!result.ok) {

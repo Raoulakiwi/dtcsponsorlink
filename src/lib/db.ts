@@ -20,6 +20,7 @@ export type Sponsor = {
   print_image_name: string | null;
   sponsorship_start_date: string | null;
   renewal_date: string | null;
+  custom_amount_note: string | null;
   created_at: Date;
 };
 
@@ -59,6 +60,7 @@ export async function ensureSchema() {
   try {
     await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS sponsorship_start_date DATE`;
     await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS renewal_date DATE`;
+    await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS custom_amount_note TEXT`;
   } catch (_) {
     // Columns may already exist
   }
@@ -77,6 +79,7 @@ export async function insertSponsor(data: {
   printImageName?: string | null;
   sponsorshipStartDate?: string | null;
   renewalDate?: string | null;
+  customAmountNote?: string | null;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!sql) return { ok: false, error: "Database not configured" };
   try {
@@ -86,12 +89,13 @@ export async function insertSponsor(data: {
         name, contact_name, email, contact_number,
         tier_id, tier_name, tier_price, email_separately,
         socials_image_name, print_image_name,
-        sponsorship_start_date, renewal_date
+        sponsorship_start_date, renewal_date, custom_amount_note
       ) VALUES (
         ${data.name}, ${data.contactName}, ${data.email}, ${data.contactNumber},
         ${data.tierId}, ${data.tierName}, ${data.tierPrice}, ${data.emailSeparately},
         ${data.socialsImageName ?? null}, ${data.printImageName ?? null},
-        ${data.sponsorshipStartDate || null}, ${data.renewalDate || null}
+        ${data.sponsorshipStartDate || null}, ${data.renewalDate || null},
+        ${data.customAmountNote ?? null}
       )
     `;
     return { ok: true };
@@ -109,11 +113,16 @@ export async function getSponsors(): Promise<Sponsor[]> {
       SELECT id, name, contact_name, email, contact_number,
              tier_id, tier_name, tier_price, email_separately,
              socials_image_name, print_image_name,
-             sponsorship_start_date, renewal_date, created_at
+             sponsorship_start_date, renewal_date, custom_amount_note, created_at
       FROM sponsors
       ORDER BY created_at DESC
     `;
-    return rows as Sponsor[];
+    return (rows as Record<string, unknown>[]).map((r) => ({
+      ...r,
+      custom_amount_note: r.custom_amount_note ?? null,
+      sponsorship_start_date: r.sponsorship_start_date ?? null,
+      renewal_date: r.renewal_date ?? null,
+    })) as Sponsor[];
   } catch (e) {
     console.error("getSponsors:", e);
     return [];
@@ -128,7 +137,7 @@ export async function getSponsor(id: string): Promise<Sponsor | null> {
       SELECT id, name, contact_name, email, contact_number,
              tier_id, tier_name, tier_price, email_separately,
              socials_image_name, print_image_name,
-             sponsorship_start_date, renewal_date, created_at
+             sponsorship_start_date, renewal_date, custom_amount_note, created_at
       FROM sponsors
       WHERE id = ${id}
       LIMIT 1
@@ -155,6 +164,7 @@ export async function updateSponsor(
     printImageName?: string | null;
     sponsorshipStartDate?: string | null;
     renewalDate?: string | null;
+    customAmountNote?: string | null;
   }
 ): Promise<{ ok: boolean; error?: string }> {
   if (!sql) return { ok: false, error: "Database not configured" };
@@ -173,7 +183,8 @@ export async function updateSponsor(
         socials_image_name = ${data.socialsImageName ?? null},
         print_image_name = ${data.printImageName ?? null},
         sponsorship_start_date = ${data.sponsorshipStartDate || null},
-        renewal_date = ${data.renewalDate || null}
+        renewal_date = ${data.renewalDate || null},
+        custom_amount_note = ${data.customAmountNote ?? null}
       WHERE id = ${id}
     `;
     return { ok: true };

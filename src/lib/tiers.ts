@@ -7,4 +7,10 @@ export const tierOptions = [
   { id: "bronze", name: "Bronze", price: 300 },
 ] as const;
 
+/** Admin only: tier options plus "Custom amount" for manual sponsorship entry. */
+export const tierOptionsWithCustom = [
+  ...tierOptions,
+  { id: "custom", name: "Custom amount", price: 0 },
+] as const;
+
 export type TierId = (typeof tierOptions)[number]["id"];

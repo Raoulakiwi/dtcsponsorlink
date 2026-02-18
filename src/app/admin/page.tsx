@@ -13,7 +13,17 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
+
+function formatDateSafe(value: string | Date | null | undefined): string {
+  if (value == null) return "—";
+  try {
+    const date = typeof value === "string" ? parseISO(value) : value;
+    return isValid(date) ? format(date, "PP") : "—";
+  } catch {
+    return "—";
+  }
+}
 
 export default async function AdminDashboardPage({
   searchParams,
@@ -61,6 +71,7 @@ export default async function AdminDashboardPage({
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Tier</TableHead>
+                  <TableHead>Note</TableHead>
                   <TableHead>Assets</TableHead>
                   <TableHead>Start date</TableHead>
                   <TableHead>Renewal date</TableHead>
@@ -77,20 +88,19 @@ export default async function AdminDashboardPage({
                     <TableCell>
                       {s.tier_name} (${s.tier_price})
                     </TableCell>
+                    <TableCell className="max-w-[200px] truncate text-muted-foreground" title={s.custom_amount_note ?? undefined}>
+                      {s.custom_amount_note ?? "—"}
+                    </TableCell>
                     <TableCell>
                       {s.email_separately
                         ? "Emailed separately"
                         : [s.socials_image_name, s.print_image_name].filter(Boolean).join(", ") || "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {s.sponsorship_start_date
-                        ? format(parseISO(s.sponsorship_start_date), "PP")
-                        : "—"}
+                      {formatDateSafe(s.sponsorship_start_date)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {s.renewal_date
-                        ? format(parseISO(s.renewal_date), "PP")
-                        : "—"}
+                      {formatDateSafe(s.renewal_date)}
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" asChild aria-label="Edit sponsor">

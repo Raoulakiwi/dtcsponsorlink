@@ -2,12 +2,13 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { createSponsor } from "@/app/admin/actions";
-import { tierOptions } from "@/lib/tiers";
+import { tierOptionsWithCustom } from "@/lib/tiers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -114,6 +115,9 @@ export default async function NewSponsorPage({
         <Card>
           <CardHeader>
             <CardTitle className="font-headline text-lg">Sponsorship tier</CardTitle>
+            <p className="text-sm text-muted-foreground font-normal">
+              Choose a fixed tier or &quot;Custom amount&quot; to enter a manual amount (note required).
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -128,12 +132,33 @@ export default async function NewSponsorPage({
                 )}
               >
                 <option value="">Select a tier</option>
-                {tierOptions.map((tier) => (
+                {tierOptionsWithCustom.map((tier) => (
                   <option key={tier.id} value={tier.id}>
-                    {tier.name} — ${tier.price}
+                    {tier.id === "custom" ? tier.name : `${tier.name} — $${tier.price}`}
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="space-y-2 rounded-md border border-dashed border-muted-foreground/30 bg-muted/30 p-4">
+              <Label htmlFor="customAmount">Custom amount (when &quot;Custom amount&quot; selected)</Label>
+              <Input
+                id="customAmount"
+                name="customAmount"
+                type="number"
+                min={0}
+                step={1}
+                placeholder="e.g. 750"
+              />
+              <Label htmlFor="customAmountNote" className="mt-2 block">
+                Note <span className="text-destructive">*required for custom amount</span>
+              </Label>
+              <Textarea
+                id="customAmountNote"
+                name="customAmountNote"
+                placeholder="Document the sponsorship details (e.g. in-kind, special arrangement)..."
+                rows={3}
+                className="resize-y"
+              />
             </div>
           </CardContent>
         </Card>
