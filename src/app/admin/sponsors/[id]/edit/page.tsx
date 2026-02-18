@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DeleteSponsorButton } from "./delete-sponsor-button";
 
 export default async function EditSponsorPage({
   params,
@@ -213,14 +214,22 @@ export default async function EditSponsorPage({
           </CardContent>
         </Card>
 
-        <div className="flex gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <Button type="submit" className="bg-accent text-accent-foreground hover:bg-accent/90">
             Save changes
           </Button>
           <Button type="button" variant="outline" asChild>
             <Link href="/admin">Cancel</Link>
           </Button>
+          {!sponsor.inactive && (
+            <DeleteSponsorButton sponsorId={sponsor.id} />
+          )}
         </div>
+        {sponsor.inactive && (
+          <p className="mt-4 text-sm text-muted-foreground">
+            This sponsor is archived (inactive). They appear in the Archived section on the dashboard.
+          </p>
+        )}
       </form>
     </div>
   );

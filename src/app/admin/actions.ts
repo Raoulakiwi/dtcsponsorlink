@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { verifyAdmin, updateAdminPassword, insertSponsor, updateSponsor } from "@/lib/db";
+import { verifyAdmin, updateAdminPassword, insertSponsor, updateSponsor, setSponsorInactive } from "@/lib/db";
 import { tierOptions } from "@/lib/tiers";
 import {
   getSession,
@@ -230,4 +230,15 @@ export async function updateSponsorAction(formData: FormData) {
     editErrorRedirect(id, result.error ?? "Failed to save changes.");
   }
   redirect("/admin?updated=1");
+}
+
+export async function deleteSponsorAction(id: string) {
+  const session = await getSession();
+  if (!session) redirect("/admin/login");
+  if (!id) redirect("/admin");
+  const result = await setSponsorInactive(id);
+  if (!result.ok) {
+    redirect(`/admin/sponsors/${id}/edit?error=${encodeURIComponent(result.error ?? "Failed to delete.")}`);
+  }
+  redirect("/admin?deleted=1");
 }

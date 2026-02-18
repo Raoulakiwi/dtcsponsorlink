@@ -139,12 +139,8 @@ export default function SponsorshipForm() {
 
     const result = await processSponsorship(formData);
 
-    if (result.success && result.paypalUrl) {
-      toast({
-        title: "Submission successful!",
-        description: "Redirecting you to PayPal to complete your sponsorship.",
-      });
-      window.location.href = result.paypalUrl;
+    if (result.success) {
+      window.location.href = "/thank-you";
     } else {
       toast({
         variant: "destructive",

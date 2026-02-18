@@ -21,6 +21,7 @@ export type Sponsor = {
   sponsorship_start_date: string | null;
   renewal_date: string | null;
   custom_amount_note: string | null;
+  inactive: boolean;
   created_at: Date;
 };
 
@@ -61,6 +62,7 @@ export async function ensureSchema() {
     await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS sponsorship_start_date DATE`;
     await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS renewal_date DATE`;
     await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS custom_amount_note TEXT`;
+    await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS inactive BOOLEAN NOT NULL DEFAULT false`;
   } catch (_) {
     // Columns may already exist
   }
@@ -113,7 +115,8 @@ export async function getSponsors(): Promise<Sponsor[]> {
       SELECT id, name, contact_name, email, contact_number,
              tier_id, tier_name, tier_price, email_separately,
              socials_image_name, print_image_name,
-             sponsorship_start_date, renewal_date, custom_amount_note, created_at
+             sponsorship_start_date, renewal_date, custom_amount_note,
+             COALESCE(inactive, false) AS inactive, created_at
       FROM sponsors
       ORDER BY created_at DESC
     `;
@@ -122,6 +125,7 @@ export async function getSponsors(): Promise<Sponsor[]> {
       custom_amount_note: r.custom_amount_note ?? null,
       sponsorship_start_date: r.sponsorship_start_date ?? null,
       renewal_date: r.renewal_date ?? null,
+      inactive: Boolean(r.inactive),
     })) as Sponsor[];
   } catch (e) {
     console.error("getSponsors:", e);
@@ -137,12 +141,15 @@ export async function getSponsor(id: string): Promise<Sponsor | null> {
       SELECT id, name, contact_name, email, contact_number,
              tier_id, tier_name, tier_price, email_separately,
              socials_image_name, print_image_name,
-             sponsorship_start_date, renewal_date, custom_amount_note, created_at
+             sponsorship_start_date, renewal_date, custom_amount_note,
+             COALESCE(inactive, false) AS inactive, created_at
       FROM sponsors
       WHERE id = ${id}
       LIMIT 1
     `;
-    return (rows[0] as Sponsor) ?? null;
+    const r = rows[0] as Record<string, unknown> | undefined;
+    if (!r) return null;
+    return { ...r, inactive: Boolean(r.inactive) } as Sponsor;
   } catch (e) {
     console.error("getSponsor:", e);
     return null;
@@ -190,6 +197,18 @@ export async function updateSponsor(
     return { ok: true };
   } catch (e) {
     console.error("updateSponsor:", e);
+    return { ok: false, error: e instanceof Error ? e.message : "Database error" };
+  }
+}
+
+export async function setSponsorInactive(id: string): Promise<{ ok: boolean; error?: string }> {
+  if (!sql) return { ok: false, error: "Database not configured" };
+  try {
+    await ensureSchema();
+    await sql`UPDATE sponsors SET inactive = true WHERE id = ${id}`;
+    return { ok: true };
+  } catch (e) {
+    console.error("setSponsorInactive:", e);
     return { ok: false, error: e instanceof Error ? e.message : "Database error" };
   }
 }

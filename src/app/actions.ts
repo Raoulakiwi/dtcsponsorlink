@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { insertSponsor } from "@/lib/db";
+import { sendNewSponsorNotification } from "@/lib/email";
 
 // This data is intentionally duplicated from lib/data.ts to avoid
 // importing client-side 'lucide-react' components into a server action.
@@ -142,58 +143,23 @@ export async function processSponsorship(formData: FormData) {
       console.error("Failed to save sponsor:", sponsorInsert.error);
     }
 
-    // --- In a real app, you would upload files to a storage service ---
-    console.log("--- Mock File Upload ---");
-    if (emailSeparately) {
-      console.log("Assets will be emailed separately.");
-    } else {
-      console.log(
-        `Uploading socials image: ${socialsImage.name} (${(
-          socialsImage.size / 1024
-        ).toFixed(2)} KB)`
-      );
-      console.log(
-        `Uploading print image: ${printImage.name} (${(
-          printImage.size / 1024
-        ).toFixed(2)} KB)`
-      );
-      // const socialsImageUrl = await uploadFile(socialsImage);
-      // const printImageUrl = await uploadFile(printImage);
+    // Notify admin by email (PayPal disabled for now)
+    const emailResult = await sendNewSponsorNotification({
+      name,
+      contactName,
+      email,
+      contactNumber,
+      tierName: selectedTier.name,
+      tierPrice: selectedTier.price,
+      emailSeparately,
+      socialsImageName: emailSeparately ? null : (socialsImage as { name?: string })?.name ?? null,
+      printImageName: emailSeparately ? null : (printImage as { name?: string })?.name ?? null,
+    });
+    if (!emailResult.ok) {
+      console.error("Failed to send new-sponsor email:", emailResult.error);
     }
 
-    // --- In a real app, you would use an email service (e.g., SendGrid, Resend) ---
-    const adminEmail = "randerson@dobmac.com.au";
-    console.log("--- Mock Email Notification ---");
-    console.log(`Sending sponsorship details to ${adminEmail}`);
-    console.log({
-      sponsor: {
-        name,
-        contactName,
-        email,
-        contactNumber,
-      },
-      tier: selectedTier.name,
-      price: selectedTier.price,
-      // In a real app, these would be URLs to the uploaded files
-      imageLinks: emailSeparately
-        ? "Assets will be emailed separately"
-        : {
-            socials: `mock_url_for_${socialsImage.name}`,
-            print: `mock_url_for_${printImage.name}`,
-          },
-      paymentStatus: "Pending PayPal payment",
-    });
-
-    // --- Construct PayPal URL ---
-    const paypalBusinessEmail = encodeURIComponent(adminEmail);
-    const itemName = encodeURIComponent(
-      `Devonport Tennis Club Sponsorship - ${selectedTier.name}`
-    );
-    const amount = selectedTier.price.toFixed(2);
-    const currency = "AUD";
-    const paypalUrl = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${paypalBusinessEmail}&item_name=${itemName}&amount=${amount}&currency_code=${currency}&no_shipping=1`;
-
-    return { success: true, paypalUrl };
+    return { success: true };
   } catch (error) {
     console.error("Error processing sponsorship:", error);
     return { success: false, error: "An unexpected error occurred." };
