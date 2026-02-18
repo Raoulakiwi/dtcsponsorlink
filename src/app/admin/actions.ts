@@ -1,7 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { verifyAdmin, updateAdminPassword } from "@/lib/db";
+import { verifyAdmin, updateAdminPassword, insertSponsor } from "@/lib/db";
+import { tierOptions } from "@/lib/tiers";
 import {
   getSession,
   createSessionCookie,
@@ -76,4 +77,55 @@ export async function changePassword(formData: FormData) {
   }
   await clearSessionCookie();
   redirect("/admin/login?passwordChanged=1");
+}
+
+export async function createSponsor(formData: FormData) {
+  const session = await getSession();
+  if (!session) redirect("/admin/login");
+
+  const name = (formData.get("name") as string)?.trim();
+  const contactName = (formData.get("contactName") as string)?.trim();
+  const email = (formData.get("email") as string)?.trim();
+  const contactNumber = (formData.get("contactNumber") as string)?.trim();
+  const tierId = formData.get("tierId") as string;
+  const emailSeparately = formData.get("emailSeparately") === "on";
+  const socialsImageName = (formData.get("socialsImageName") as string)?.trim() || null;
+  const printImageName = (formData.get("printImageName") as string)?.trim() || null;
+
+  if (!name || name.length < 2) {
+    redirect(`/admin/sponsors/new?error=${encodeURIComponent("Name must be at least 2 characters.")}`);
+  }
+  if (!contactName || contactName.length < 2) {
+    redirect(`/admin/sponsors/new?error=${encodeURIComponent("Contact name must be at least 2 characters.")}`);
+  }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    redirect(`/admin/sponsors/new?error=${encodeURIComponent("Please enter a valid email address.")}`);
+  }
+  if (!contactNumber?.trim()) {
+    redirect(`/admin/sponsors/new?error=${encodeURIComponent("Please enter a contact number.")}`);
+  }
+  const tier = tierOptions.find((t) => t.id === tierId);
+  if (!tier) {
+    redirect(`/admin/sponsors/new?error=${encodeURIComponent("Please select a sponsorship tier.")}`);
+  }
+
+  const result = await insertSponsor({
+    name,
+    contactName,
+    email,
+    contactNumber: contactNumber.trim(),
+    tierId: tier.id,
+    tierName: tier.name,
+    tierPrice: tier.price,
+    emailSeparately,
+    socialsImageName,
+    printImageName,
+  });
+
+  if (!result.ok) {
+    redirect(
+      `/admin/sponsors/new?error=${encodeURIComponent(result.error ?? "Failed to save sponsor.")}`
+    );
+  }
+  redirect("/admin?added=1");
 }

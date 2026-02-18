@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { getSponsors } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,15 +11,35 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { format } from "date-fns";
 
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ added?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/admin/login");
   const sponsors = await getSponsors();
+  const params = await searchParams;
   return (
     <div>
-      <h1 className="font-headline text-2xl font-bold mb-6">Sponsors</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <h1 className="font-headline text-2xl font-bold">Sponsors</h1>
+        <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <Link href="/admin/sponsors/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Add sponsor
+          </Link>
+        </Button>
+      </div>
+      {params.added === "1" && (
+        <p className="mb-4 text-sm text-green-600 dark:text-green-400">
+          Sponsor added successfully.
+        </p>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-lg">All submissions</CardTitle>
