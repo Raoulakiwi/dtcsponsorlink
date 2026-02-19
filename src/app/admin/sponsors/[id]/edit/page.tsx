@@ -49,7 +49,7 @@ export default async function EditSponsorPage({
         Back to dashboard
       </Link>
       <h1 className="font-headline text-2xl font-bold mb-6">Edit sponsor</h1>
-      <form action={updateSponsorAction} className="space-y-6">
+      <form action={updateSponsorAction} className="space-y-6" encType="multipart/form-data">
         <input type="hidden" name="id" value={sponsor.id} />
         <Card>
           <CardHeader>

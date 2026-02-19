@@ -188,87 +188,96 @@ export async function updateSponsorAction(formData: FormData) {
   const session = await getSession();
   if (!session) redirect("/admin/login");
 
-  const id = formData.get("id") as string;
+  const id = (formData.get("id") as string)?.trim();
   if (!id) redirect("/admin");
 
-  const name = (formData.get("name") as string)?.trim();
-  const contactName = (formData.get("contactName") as string)?.trim();
-  const email = (formData.get("email") as string)?.trim();
-  const contactNumber = (formData.get("contactNumber") as string)?.trim();
-  const tierId = formData.get("tierId") as string;
-  const emailSeparately = formData.get("emailSeparately") === "on";
-  let socialsImageName = (formData.get("socialsImageName") as string)?.trim() || null;
-  let printImageName = (formData.get("printImageName") as string)?.trim() || null;
-  const sponsorshipStartDate = (formData.get("sponsorshipStartDate") as string)?.trim() || null;
-  const renewalDate = (formData.get("renewalDate") as string)?.trim() || null;
-  const customAmountRaw = formData.get("customAmount") as string;
-  const customAmountNote = (formData.get("customAmountNote") as string)?.trim() || null;
-  let socialsImageUrl = (formData.get("socialsImageUrl") as string)?.trim() || null;
-  let printImageUrl = (formData.get("printImageUrl") as string)?.trim() || null;
+  try {
+    const name = (formData.get("name") as string)?.trim();
+    const contactName = (formData.get("contactName") as string)?.trim();
+    const email = (formData.get("email") as string)?.trim();
+    const contactNumber = (formData.get("contactNumber") as string)?.trim();
+    const tierId = formData.get("tierId") as string;
+    const emailSeparately = formData.get("emailSeparately") === "on";
+    let socialsImageName = (formData.get("socialsImageName") as string)?.trim() || null;
+    let printImageName = (formData.get("printImageName") as string)?.trim() || null;
+    const sponsorshipStartDate = (formData.get("sponsorshipStartDate") as string)?.trim() || null;
+    const renewalDate = (formData.get("renewalDate") as string)?.trim() || null;
+    const customAmountRaw = formData.get("customAmount") as string;
+    const customAmountNote = (formData.get("customAmountNote") as string)?.trim() || null;
+    let socialsImageUrl = (formData.get("socialsImageUrl") as string)?.trim() || null;
+    let printImageUrl = (formData.get("printImageUrl") as string)?.trim() || null;
 
-  const socialsFile = formData.get("socialsImage") as File | null;
-  const printFile = formData.get("printImage") as File | null;
-  if (socialsFile?.size && socialsFile.size > 0) {
-    const up = await uploadAsset(socialsFile, "sponsors/socials");
-    if ("error" in up) editErrorRedirect(id, up.error);
-    socialsImageUrl = up.url;
-    if (!socialsImageName) socialsImageName = socialsFile.name;
+    const socialsFile = formData.get("socialsImage") as File | null;
+    const printFile = formData.get("printImage") as File | null;
+    if (socialsFile?.size && socialsFile.size > 0) {
+      const up = await uploadAsset(socialsFile, "sponsors/socials");
+      if ("error" in up) editErrorRedirect(id, up.error);
+      socialsImageUrl = up.url;
+      if (!socialsImageName) socialsImageName = socialsFile.name;
+    }
+    if (printFile?.size && printFile.size > 0) {
+      const up = await uploadAsset(printFile, "sponsors/print");
+      if ("error" in up) editErrorRedirect(id, up.error);
+      printImageUrl = up.url;
+      if (!printImageName) printImageName = printFile.name;
+    }
+
+    if (!name || name.length < 2) editErrorRedirect(id, "Name must be at least 2 characters.");
+    if (!contactName || contactName.length < 2) editErrorRedirect(id, "Contact name must be at least 2 characters.");
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) editErrorRedirect(id, "Please enter a valid email address.");
+    if (!contactNumber?.trim()) editErrorRedirect(id, "Please enter a contact number.");
+
+    let tierIdFinal: string;
+    let tierNameFinal: string;
+    let tierPriceFinal: number;
+    let customNoteFinal: string | null = null;
+
+    if (tierId === "custom") {
+      const amount = customAmountRaw ? Number(customAmountRaw) : NaN;
+      if (Number.isNaN(amount) || amount < 0) editErrorRedirect(id, "Please enter a valid custom amount (0 or more).");
+      if (!customAmountNote || customAmountNote.length < 1) editErrorRedirect(id, "A note is required when using a custom sponsorship amount.");
+      tierIdFinal = "custom";
+      tierNameFinal = "Custom";
+      tierPriceFinal = Math.round(amount);
+      customNoteFinal = customAmountNote;
+    } else {
+      const tier = tierOptions.find((t) => t.id === tierId);
+      if (!tier) editErrorRedirect(id, "Please select a sponsorship tier.");
+      tierIdFinal = tier.id;
+      tierNameFinal = tier.name;
+      tierPriceFinal = tier.price;
+    }
+
+    const result = await updateSponsor(id, {
+      name,
+      contactName,
+      email,
+      contactNumber: contactNumber.trim(),
+      tierId: tierIdFinal,
+      tierName: tierNameFinal,
+      tierPrice: tierPriceFinal,
+      emailSeparately,
+      socialsImageName,
+      printImageName,
+      socialsImageUrl,
+      printImageUrl,
+      sponsorshipStartDate,
+      renewalDate,
+      customAmountNote: customNoteFinal,
+    });
+
+    if (!result.ok) {
+      editErrorRedirect(id, result.error ?? "Failed to save changes.");
+    }
+    redirect("/admin?updated=1");
+  } catch (e) {
+    const err = e as { digest?: string } | null;
+    if (err && typeof err === "object" && typeof err.digest === "string" && err.digest.startsWith("NEXT_REDIRECT")) {
+      throw e;
+    }
+    console.error("updateSponsorAction:", e);
+    editErrorRedirect(id, e instanceof Error ? e.message : "Something went wrong. Try again or save without changing images.");
   }
-  if (printFile?.size && printFile.size > 0) {
-    const up = await uploadAsset(printFile, "sponsors/print");
-    if ("error" in up) editErrorRedirect(id, up.error);
-    printImageUrl = up.url;
-    if (!printImageName) printImageName = printFile.name;
-  }
-
-  if (!name || name.length < 2) editErrorRedirect(id, "Name must be at least 2 characters.");
-  if (!contactName || contactName.length < 2) editErrorRedirect(id, "Contact name must be at least 2 characters.");
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) editErrorRedirect(id, "Please enter a valid email address.");
-  if (!contactNumber?.trim()) editErrorRedirect(id, "Please enter a contact number.");
-
-  let tierIdFinal: string;
-  let tierNameFinal: string;
-  let tierPriceFinal: number;
-  let customNoteFinal: string | null = null;
-
-  if (tierId === "custom") {
-    const amount = customAmountRaw ? Number(customAmountRaw) : NaN;
-    if (Number.isNaN(amount) || amount < 0) editErrorRedirect(id, "Please enter a valid custom amount (0 or more).");
-    if (!customAmountNote || customAmountNote.length < 1) editErrorRedirect(id, "A note is required when using a custom sponsorship amount.");
-    tierIdFinal = "custom";
-    tierNameFinal = "Custom";
-    tierPriceFinal = Math.round(amount);
-    customNoteFinal = customAmountNote;
-  } else {
-    const tier = tierOptions.find((t) => t.id === tierId);
-    if (!tier) editErrorRedirect(id, "Please select a sponsorship tier.");
-    tierIdFinal = tier.id;
-    tierNameFinal = tier.name;
-    tierPriceFinal = tier.price;
-  }
-
-  const result = await updateSponsor(id, {
-    name,
-    contactName,
-    email,
-    contactNumber: contactNumber.trim(),
-    tierId: tierIdFinal,
-    tierName: tierNameFinal,
-    tierPrice: tierPriceFinal,
-    emailSeparately,
-    socialsImageName,
-    printImageName,
-    socialsImageUrl,
-    printImageUrl,
-    sponsorshipStartDate,
-    renewalDate,
-    customAmountNote: customNoteFinal,
-  });
-
-  if (!result.ok) {
-    editErrorRedirect(id, result.error ?? "Failed to save changes.");
-  }
-  redirect("/admin?updated=1");
 }
 
 export async function deleteSponsorAction(id: string) {
