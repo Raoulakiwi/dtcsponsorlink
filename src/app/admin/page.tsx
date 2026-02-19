@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
 import { format, parseISO, isValid, startOfDay } from "date-fns";
 import type { Sponsor } from "@/lib/db";
+import { AssetCell } from "./asset-cell";
 
 function formatDateSafe(value: string | Date | null | undefined): string {
   if (value == null) return "—";
@@ -68,23 +69,13 @@ function SponsorTable({ sponsors }: { sponsors: Sponsor[] }) {
               {s.custom_amount_note ?? "—"}
             </TableCell>
             <TableCell>
-              {s.email_separately
-                ? "Emailed separately"
-                : (
-                    <>
-                      {s.socials_image_url && (
-                        <a href={s.socials_image_url} target="_blank" rel="noopener noreferrer" className="text-primary underline text-sm mr-2">
-                          Socials
-                        </a>
-                      )}
-                      {s.print_image_url && (
-                        <a href={s.print_image_url} target="_blank" rel="noopener noreferrer" className="text-primary underline text-sm">
-                          Print
-                        </a>
-                      )}
-                      {!s.socials_image_url && !s.print_image_url && ([s.socials_image_name, s.print_image_name].filter(Boolean).join(", ") || "—")}
-                    </>
-                  )}
+              <AssetCell
+                socialsImageUrl={s.socials_image_url}
+                printImageUrl={s.print_image_url}
+                emailSeparately={s.email_separately}
+                socialsImageName={s.socials_image_name}
+                printImageName={s.print_image_name}
+              />
             </TableCell>
             <TableCell className="text-muted-foreground">
               {formatDateSafe(s.sponsorship_start_date)}
