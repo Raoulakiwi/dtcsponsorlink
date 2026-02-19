@@ -167,7 +167,7 @@ export default async function NewSponsorPage({
           <CardHeader>
             <CardTitle className="font-headline text-lg">Assets (optional)</CardTitle>
             <p className="text-sm text-muted-foreground font-normal">
-              If they will email assets separately or you have file names to record, use the options below.
+              Upload images or tick &quot;Assets will be emailed separately&quot;. Max 4 MB per file.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -178,19 +178,33 @@ export default async function NewSponsorPage({
               </Label>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="socialsImageName">Socials image (file name or note)</Label>
+              <Label htmlFor="socialsImage">Socials image</Label>
+              <Input
+                id="socialsImage"
+                name="socialsImage"
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.pdf,.psd,.tiff,image/*"
+              />
               <Input
                 id="socialsImageName"
                 name="socialsImageName"
-                placeholder="e.g. logo-socials.png or leave blank"
+                placeholder="File name or note (optional)"
+                className="mt-1"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="printImageName">Print-ready image (file name or note)</Label>
+              <Label htmlFor="printImage">Print-ready image</Label>
+              <Input
+                id="printImage"
+                name="printImage"
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.pdf,.psd,.tiff,image/*"
+              />
               <Input
                 id="printImageName"
                 name="printImageName"
-                placeholder="e.g. logo-print.pdf or leave blank"
+                placeholder="File name or note (optional)"
+                className="mt-1"
               />
             </div>
           </CardContent>

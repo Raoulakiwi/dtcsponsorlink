@@ -18,6 +18,8 @@ export type Sponsor = {
   email_separately: boolean;
   socials_image_name: string | null;
   print_image_name: string | null;
+  socials_image_url: string | null;
+  print_image_url: string | null;
   sponsorship_start_date: string | null;
   renewal_date: string | null;
   custom_amount_note: string | null;
@@ -63,6 +65,8 @@ export async function ensureSchema() {
     await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS renewal_date DATE`;
     await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS custom_amount_note TEXT`;
     await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS inactive BOOLEAN NOT NULL DEFAULT false`;
+    await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS socials_image_url TEXT`;
+    await sql`ALTER TABLE sponsors ADD COLUMN IF NOT EXISTS print_image_url TEXT`;
   } catch (_) {
     // Columns may already exist
   }
@@ -79,6 +83,8 @@ export async function insertSponsor(data: {
   emailSeparately: boolean;
   socialsImageName?: string | null;
   printImageName?: string | null;
+  socialsImageUrl?: string | null;
+  printImageUrl?: string | null;
   sponsorshipStartDate?: string | null;
   renewalDate?: string | null;
   customAmountNote?: string | null;
@@ -90,12 +96,13 @@ export async function insertSponsor(data: {
       INSERT INTO sponsors (
         name, contact_name, email, contact_number,
         tier_id, tier_name, tier_price, email_separately,
-        socials_image_name, print_image_name,
+        socials_image_name, print_image_name, socials_image_url, print_image_url,
         sponsorship_start_date, renewal_date, custom_amount_note
       ) VALUES (
         ${data.name}, ${data.contactName}, ${data.email}, ${data.contactNumber},
         ${data.tierId}, ${data.tierName}, ${data.tierPrice}, ${data.emailSeparately},
         ${data.socialsImageName ?? null}, ${data.printImageName ?? null},
+        ${data.socialsImageUrl ?? null}, ${data.printImageUrl ?? null},
         ${data.sponsorshipStartDate || null}, ${data.renewalDate || null},
         ${data.customAmountNote ?? null}
       )
@@ -114,7 +121,7 @@ export async function getSponsors(): Promise<Sponsor[]> {
     const rows = await sql`
       SELECT id, name, contact_name, email, contact_number,
              tier_id, tier_name, tier_price, email_separately,
-             socials_image_name, print_image_name,
+             socials_image_name, print_image_name, socials_image_url, print_image_url,
              sponsorship_start_date, renewal_date, custom_amount_note,
              COALESCE(inactive, false) AS inactive, created_at
       FROM sponsors
@@ -123,6 +130,8 @@ export async function getSponsors(): Promise<Sponsor[]> {
     return (rows as Record<string, unknown>[]).map((r) => ({
       ...r,
       custom_amount_note: r.custom_amount_note ?? null,
+      socials_image_url: r.socials_image_url ?? null,
+      print_image_url: r.print_image_url ?? null,
       sponsorship_start_date: r.sponsorship_start_date ?? null,
       renewal_date: r.renewal_date ?? null,
       inactive: Boolean(r.inactive),
@@ -140,7 +149,7 @@ export async function getSponsor(id: string): Promise<Sponsor | null> {
     const rows = await sql`
       SELECT id, name, contact_name, email, contact_number,
              tier_id, tier_name, tier_price, email_separately,
-             socials_image_name, print_image_name,
+             socials_image_name, print_image_name, socials_image_url, print_image_url,
              sponsorship_start_date, renewal_date, custom_amount_note,
              COALESCE(inactive, false) AS inactive, created_at
       FROM sponsors
@@ -149,7 +158,12 @@ export async function getSponsor(id: string): Promise<Sponsor | null> {
     `;
     const r = rows[0] as Record<string, unknown> | undefined;
     if (!r) return null;
-    return { ...r, inactive: Boolean(r.inactive) } as Sponsor;
+    return {
+      ...r,
+      socials_image_url: r.socials_image_url ?? null,
+      print_image_url: r.print_image_url ?? null,
+      inactive: Boolean(r.inactive),
+    } as Sponsor;
   } catch (e) {
     console.error("getSponsor:", e);
     return null;
@@ -169,6 +183,8 @@ export async function updateSponsor(
     emailSeparately: boolean;
     socialsImageName?: string | null;
     printImageName?: string | null;
+    socialsImageUrl?: string | null;
+    printImageUrl?: string | null;
     sponsorshipStartDate?: string | null;
     renewalDate?: string | null;
     customAmountNote?: string | null;
@@ -189,6 +205,8 @@ export async function updateSponsor(
         email_separately = ${data.emailSeparately},
         socials_image_name = ${data.socialsImageName ?? null},
         print_image_name = ${data.printImageName ?? null},
+        socials_image_url = ${data.socialsImageUrl ?? null},
+        print_image_url = ${data.printImageUrl ?? null},
         sponsorship_start_date = ${data.sponsorshipStartDate || null},
         renewal_date = ${data.renewalDate || null},
         custom_amount_note = ${data.customAmountNote ?? null}

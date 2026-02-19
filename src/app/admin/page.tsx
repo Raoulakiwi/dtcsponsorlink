@@ -70,7 +70,21 @@ function SponsorTable({ sponsors }: { sponsors: Sponsor[] }) {
             <TableCell>
               {s.email_separately
                 ? "Emailed separately"
-                : [s.socials_image_name, s.print_image_name].filter(Boolean).join(", ") || "—"}
+                : (
+                    <>
+                      {s.socials_image_url && (
+                        <a href={s.socials_image_url} target="_blank" rel="noopener noreferrer" className="text-primary underline text-sm mr-2">
+                          Socials
+                        </a>
+                      )}
+                      {s.print_image_url && (
+                        <a href={s.print_image_url} target="_blank" rel="noopener noreferrer" className="text-primary underline text-sm">
+                          Print
+                        </a>
+                      )}
+                      {!s.socials_image_url && !s.print_image_url && ([s.socials_image_name, s.print_image_name].filter(Boolean).join(", ") || "—")}
+                    </>
+                  )}
             </TableCell>
             <TableCell className="text-muted-foreground">
               {formatDateSafe(s.sponsorship_start_date)}

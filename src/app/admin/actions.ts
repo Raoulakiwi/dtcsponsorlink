@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { verifyAdmin, updateAdminPassword, insertSponsor, updateSponsor, setSponsorInactive } from "@/lib/db";
 import { tierOptions } from "@/lib/tiers";
+import { uploadAsset } from "@/lib/upload";
 import {
   getSession,
   createSessionCookie,
@@ -89,12 +90,29 @@ export async function createSponsor(formData: FormData) {
   const contactNumber = (formData.get("contactNumber") as string)?.trim();
   const tierId = formData.get("tierId") as string;
   const emailSeparately = formData.get("emailSeparately") === "on";
-  const socialsImageName = (formData.get("socialsImageName") as string)?.trim() || null;
-  const printImageName = (formData.get("printImageName") as string)?.trim() || null;
+  let socialsImageName = (formData.get("socialsImageName") as string)?.trim() || null;
+  let printImageName = (formData.get("printImageName") as string)?.trim() || null;
   const sponsorshipStartDate = (formData.get("sponsorshipStartDate") as string)?.trim() || null;
   const renewalDate = (formData.get("renewalDate") as string)?.trim() || null;
   const customAmountRaw = formData.get("customAmount") as string;
   const customAmountNote = (formData.get("customAmountNote") as string)?.trim() || null;
+
+  let socialsImageUrl: string | null = null;
+  let printImageUrl: string | null = null;
+  const socialsFile = formData.get("socialsImage") as File | null;
+  const printFile = formData.get("printImage") as File | null;
+  if (socialsFile?.size && socialsFile.size > 0) {
+    const up = await uploadAsset(socialsFile, "sponsors/socials");
+    if ("error" in up) redirect(`/admin/sponsors/new?error=${encodeURIComponent(up.error)}`);
+    socialsImageUrl = up.url;
+    if (!socialsImageName) socialsImageName = socialsFile.name;
+  }
+  if (printFile?.size && printFile.size > 0) {
+    const up = await uploadAsset(printFile, "sponsors/print");
+    if ("error" in up) redirect(`/admin/sponsors/new?error=${encodeURIComponent(up.error)}`);
+    printImageUrl = up.url;
+    if (!printImageName) printImageName = printFile.name;
+  }
 
   if (!name || name.length < 2) {
     redirect(`/admin/sponsors/new?error=${encodeURIComponent("Name must be at least 2 characters.")}`);
@@ -147,6 +165,8 @@ export async function createSponsor(formData: FormData) {
     emailSeparately,
     socialsImageName,
     printImageName,
+    socialsImageUrl,
+    printImageUrl,
     sponsorshipStartDate,
     renewalDate,
     customAmountNote: customNoteFinal,
@@ -177,12 +197,29 @@ export async function updateSponsorAction(formData: FormData) {
   const contactNumber = (formData.get("contactNumber") as string)?.trim();
   const tierId = formData.get("tierId") as string;
   const emailSeparately = formData.get("emailSeparately") === "on";
-  const socialsImageName = (formData.get("socialsImageName") as string)?.trim() || null;
-  const printImageName = (formData.get("printImageName") as string)?.trim() || null;
+  let socialsImageName = (formData.get("socialsImageName") as string)?.trim() || null;
+  let printImageName = (formData.get("printImageName") as string)?.trim() || null;
   const sponsorshipStartDate = (formData.get("sponsorshipStartDate") as string)?.trim() || null;
   const renewalDate = (formData.get("renewalDate") as string)?.trim() || null;
   const customAmountRaw = formData.get("customAmount") as string;
   const customAmountNote = (formData.get("customAmountNote") as string)?.trim() || null;
+  let socialsImageUrl = (formData.get("socialsImageUrl") as string)?.trim() || null;
+  let printImageUrl = (formData.get("printImageUrl") as string)?.trim() || null;
+
+  const socialsFile = formData.get("socialsImage") as File | null;
+  const printFile = formData.get("printImage") as File | null;
+  if (socialsFile?.size && socialsFile.size > 0) {
+    const up = await uploadAsset(socialsFile, "sponsors/socials");
+    if ("error" in up) editErrorRedirect(id, up.error);
+    socialsImageUrl = up.url;
+    if (!socialsImageName) socialsImageName = socialsFile.name;
+  }
+  if (printFile?.size && printFile.size > 0) {
+    const up = await uploadAsset(printFile, "sponsors/print");
+    if ("error" in up) editErrorRedirect(id, up.error);
+    printImageUrl = up.url;
+    if (!printImageName) printImageName = printFile.name;
+  }
 
   if (!name || name.length < 2) editErrorRedirect(id, "Name must be at least 2 characters.");
   if (!contactName || contactName.length < 2) editErrorRedirect(id, "Contact name must be at least 2 characters.");
@@ -221,6 +258,8 @@ export async function updateSponsorAction(formData: FormData) {
     emailSeparately,
     socialsImageName,
     printImageName,
+    socialsImageUrl,
+    printImageUrl,
     sponsorshipStartDate,
     renewalDate,
     customAmountNote: customNoteFinal,

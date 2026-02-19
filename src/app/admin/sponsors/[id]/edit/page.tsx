@@ -191,8 +191,13 @@ export default async function EditSponsorPage({
         <Card>
           <CardHeader>
             <CardTitle className="font-headline text-lg">Assets (optional)</CardTitle>
+            <p className="text-sm text-muted-foreground font-normal">
+              Upload images or download existing ones. Max 4 MB per file.
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
+            <input type="hidden" name="socialsImageUrl" value={sponsor.socials_image_url ?? ""} />
+            <input type="hidden" name="printImageUrl" value={sponsor.print_image_url ?? ""} />
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="emailSeparately"
@@ -205,22 +210,60 @@ export default async function EditSponsorPage({
               </Label>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="socialsImageName">Socials image (file name or note)</Label>
-              <Input
-                id="socialsImageName"
-                name="socialsImageName"
-                defaultValue={sponsor.socials_image_name ?? ""}
-                placeholder="e.g. logo-socials.png or leave blank"
-              />
+              <Label htmlFor="socialsImage">Socials image</Label>
+              <div className="flex flex-col gap-2">
+                {sponsor.socials_image_url && (
+                  <a
+                    href={sponsor.socials_image_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary underline"
+                  >
+                    Download current socials image
+                  </a>
+                )}
+                <Input
+                  id="socialsImage"
+                  name="socialsImage"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf,.psd,.tiff,image/*"
+                />
+                <Input
+                  id="socialsImageName"
+                  name="socialsImageName"
+                  defaultValue={sponsor.socials_image_name ?? ""}
+                  placeholder="File name or note (optional)"
+                  className="mt-1"
+                />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="printImageName">Print-ready image (file name or note)</Label>
-              <Input
-                id="printImageName"
-                name="printImageName"
-                defaultValue={sponsor.print_image_name ?? ""}
-                placeholder="e.g. logo-print.pdf or leave blank"
-              />
+              <Label htmlFor="printImage">Print-ready image</Label>
+              <div className="flex flex-col gap-2">
+                {sponsor.print_image_url && (
+                  <a
+                    href={sponsor.print_image_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary underline"
+                  >
+                    Download current print image
+                  </a>
+                )}
+                <Input
+                  id="printImage"
+                  name="printImage"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf,.psd,.tiff,image/*"
+                />
+                <Input
+                  id="printImageName"
+                  name="printImageName"
+                  defaultValue={sponsor.print_image_name ?? ""}
+                  placeholder="File name or note (optional)"
+                  className="mt-1"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
