@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import type { SponsorshipTier } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4 MB (same as admin / Vercel Blob)
 const ACCEPTED_IMAGE_TYPES = [
   "image/jpeg",
   "image/jpg",
@@ -87,7 +87,7 @@ const formSchema = z
       if (file.size > MAX_FILE_SIZE) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Max file size is 10MB.`,
+          message: `Max file size is 4 MB.`,
           path: [fieldName],
         });
         return;

@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { insertSponsor } from "@/lib/db";
 import { sendNewSponsorNotification } from "@/lib/email";
+import { uploadAsset } from "@/lib/upload";
 
 // This data is intentionally duplicated from lib/data.ts to avoid
 // importing client-side 'lucide-react' components into a server action.
@@ -14,7 +15,7 @@ const sponsorshipTiers = [
   { id: "bronze", name: "Bronze", price: 300 },
 ];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4 MB (same as admin / Vercel Blob limit)
 const ACCEPTED_IMAGE_TYPES = [
   "image/jpeg",
   "image/jpg",
@@ -68,7 +69,7 @@ const sponsorshipSchema = z
       if (f.size > MAX_FILE_SIZE) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Max file size is 10MB.`,
+          message: `Max file size is 4 MB.`,
           path: [fieldName],
         });
         return;
@@ -127,6 +128,29 @@ export async function processSponsorship(formData: FormData) {
       return { success: false, error: "Invalid tier selected." };
     }
 
+    let socialsImageUrl: string | null = null;
+    let printImageUrl: string | null = null;
+    let socialsImageName: string | null = emailSeparately ? null : (socialsImage as { name?: string })?.name ?? null;
+    let printImageName: string | null = emailSeparately ? null : (printImage as { name?: string })?.name ?? null;
+
+    if (!emailSeparately && socialsImage && printImage) {
+      const socialsFile = socialsImage as File;
+      const printFile = printImage as File;
+      const socialsUp = await uploadAsset(socialsFile, "sponsors/socials");
+      if ("error" in socialsUp) {
+        return { success: false, error: socialsUp.error };
+      }
+      socialsImageUrl = socialsUp.url;
+      if (!socialsImageName) socialsImageName = socialsFile.name;
+
+      const printUp = await uploadAsset(printFile, "sponsors/print");
+      if ("error" in printUp) {
+        return { success: false, error: printUp.error };
+      }
+      printImageUrl = printUp.url;
+      if (!printImageName) printImageName = printFile.name;
+    }
+
     const sponsorInsert = await insertSponsor({
       name,
       contactName,
@@ -136,8 +160,10 @@ export async function processSponsorship(formData: FormData) {
       tierName: selectedTier.name,
       tierPrice: selectedTier.price,
       emailSeparately,
-      socialsImageName: emailSeparately ? null : (socialsImage as { name?: string })?.name ?? null,
-      printImageName: emailSeparately ? null : (printImage as { name?: string })?.name ?? null,
+      socialsImageName,
+      printImageName,
+      socialsImageUrl,
+      printImageUrl,
     });
     if (!sponsorInsert.ok) {
       console.error("Failed to save sponsor:", sponsorInsert.error);
@@ -152,8 +178,8 @@ export async function processSponsorship(formData: FormData) {
       tierName: selectedTier.name,
       tierPrice: selectedTier.price,
       emailSeparately,
-      socialsImageName: emailSeparately ? null : (socialsImage as { name?: string })?.name ?? null,
-      printImageName: emailSeparately ? null : (printImage as { name?: string })?.name ?? null,
+      socialsImageName,
+      printImageName,
     });
     if (!emailResult.ok) {
       console.error("Failed to send new-sponsor email:", emailResult.error);
