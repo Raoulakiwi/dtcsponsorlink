@@ -14,6 +14,7 @@ import { ArrowLeft } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DeleteSponsorButton } from "./delete-sponsor-button";
+import { AssetThumbnail } from "./asset-thumbnail";
 
 function toDateInputValue(value: string | Date | null | undefined): string {
   if (value == null) return "";
@@ -213,14 +214,11 @@ export default async function EditSponsorPage({
               <Label htmlFor="socialsImage">Socials image</Label>
               <div className="flex flex-col gap-2">
                 {sponsor.socials_image_url && (
-                  <a
-                    href={sponsor.socials_image_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary underline"
-                  >
-                    Download current socials image
-                  </a>
+                  <AssetThumbnail
+                    url={sponsor.socials_image_url}
+                    alt="Socials image"
+                    label="Current socials image"
+                  />
                 )}
                 <Input
                   id="socialsImage"
@@ -241,14 +239,11 @@ export default async function EditSponsorPage({
               <Label htmlFor="printImage">Print-ready image</Label>
               <div className="flex flex-col gap-2">
                 {sponsor.print_image_url && (
-                  <a
-                    href={sponsor.print_image_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary underline"
-                  >
-                    Download current print image
-                  </a>
+                  <AssetThumbnail
+                    url={sponsor.print_image_url}
+                    alt="Print image"
+                    label="Current print image"
+                  />
                 )}
                 <Input
                   id="printImage"

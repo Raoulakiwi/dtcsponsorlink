@@ -6,14 +6,17 @@ export async function uploadAsset(
   file: File,
   prefix: string
 ): Promise<{ url: string } | { error: string }> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return { error: "File upload is not configured (BLOB_READ_WRITE_TOKEN). Save without uploading or add the token in Vercel." };
+  if (!process.env.BLOBB_READ_WRITE_TOKEN) {
+    return { error: "File upload is not configured (BLOBB_READ_WRITE_TOKEN). Save without uploading or add the token in Vercel." };
   }
   if (file.size <= 0) return { error: "File is empty" };
   if (file.size > MAX_SIZE) return { error: "File must be under 4 MB" };
   try {
     const name = `${prefix}/${Date.now()}-${(file.name || "file").replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-    const blob = await put(name, file, { access: "public" });
+    const blob = await put(name, file, {
+      access: "public",
+      token: process.env.BLOBB_READ_WRITE_TOKEN,
+    });
     return { url: blob.url };
   } catch (e) {
     console.error("uploadAsset:", e);
@@ -22,5 +25,5 @@ export async function uploadAsset(
 }
 
 export function isUploadConfigured(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return Boolean(process.env.BLOBB_READ_WRITE_TOKEN);
 }
