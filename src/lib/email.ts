@@ -3,7 +3,7 @@ import { Resend } from "resend";
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const ADMIN_EMAIL = "randerson@dobmac.com.au";
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "Devonport Tennis Club Sponsorship <onboarding@resend.dev>";
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "raoul@wiland.com.au";
 
 export type NewSponsorEmailParams = {
   name: string;
@@ -41,9 +41,10 @@ export async function sendNewSponsorNotification(params: NewSponsorEmailParams):
   `;
 
   try {
+    const toAddresses = [...new Set([ADMIN_EMAIL, params.email])];
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
-      to: [ADMIN_EMAIL],
+      to: toAddresses,
       subject: "New sponsor added – SponsorLink",
       html,
     });
