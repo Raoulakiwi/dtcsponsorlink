@@ -3,6 +3,7 @@ import { Resend } from "resend";
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const ADMIN_EMAIL = "randerson@dobmac.com.au";
+const CLUB_EMAIL = "devonporttennisclub@gmail.com";
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "raoul@wiland.com.au";
 
 export type NewSponsorEmailParams = {
@@ -41,7 +42,7 @@ export async function sendNewSponsorNotification(params: NewSponsorEmailParams):
   `;
 
   try {
-    const toAddresses = [...new Set([ADMIN_EMAIL, params.email])];
+    const toAddresses = [...new Set([ADMIN_EMAIL, CLUB_EMAIL, params.email])];
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: toAddresses,
