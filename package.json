@@ -9,7 +9,9 @@
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:certified": "node scripts/check-certified-surfaces.js",
+    "setup:hooks": "node scripts/setup-certified-hooks.js"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.20.0",

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Pre-commit: certified surfaces (+ @protected when check-protected-code.js exists)
+# Override intentional certified changes: CERTIFIED_OVERRIDE=1 git commit ...
+
+if [ "$CERTIFIED_OVERRIDE" = "1" ]; then
+  node scripts/check-certified-surfaces.js --certified-override || exit 1
+else
+  node scripts/check-certified-surfaces.js || exit 1
+fi
+
+exit 0
